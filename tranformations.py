@@ -154,3 +154,9 @@ def direction(columnName):
                 else:
                     previous = int(row[columnIndex])
                     continue
+            except:
+                print row
+                continue
+
+        print totalRows + "rows transformed."
+        return "Transformation Successful"
