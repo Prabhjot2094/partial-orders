@@ -10,25 +10,25 @@ def getClass(value, classesList):
 
 def stepSize(columnName, classesList):
     with open('../record.csv', 'rb') as inputFile , open('../_'+columnName+'_definedMoves_record.csv', 'wb') as outputFile:
-       spamInput = csv.reader(inputFile, delimiter=',')
-       spamOutput = csv.writer(outputFile, delimiter=',')
-       
-       columnLabels = next(spamInput)
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(outputFile, delimiter=',')
 
-       try:
+        columnLabels = next(spamInput)
+
+        try:
            columnIndex = columnLabels.index(columnName)
-       except:
+        except:
            print columnLabels
            return "Unknown column"
 
-       firstRow = next(spamInput)
+        firstRow = next(spamInput)
 
-       previousValue = firstRow[columnIndex]
-       previousClass = getClass(previousValue, classesList)
+        previousValue = firstRow[columnIndex]
+        previousClass = getClass(previousValue, classesList)
 
-       print firstRow , columnIndex
-       totalRows = transformedRows = 1
-       for row in spamInput:
+        print firstRow , columnIndex
+        totalRows = transformedRows = 1
+        for row in spamInput:
            totalRows+=1
            try:
                rowClass = getClass(row[columnIndex], classesList)
@@ -39,28 +39,28 @@ def stepSize(columnName, classesList):
            except:
                continue
 
-    
+
 def definedMoves():
     columnName = "YAW"
     with open('../record.csv', 'rb') as inputFile , open('../_'+columnName+'_definedMoves_record.csv', 'wb') as outputFile:
-       spamInput = csv.reader(inputFile, delimiter=',')
-       spamOutput = csv.writer(outputFile, delimiter=',')
-       
-       columnLabels = next(spamInput)
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(outputFile, delimiter=',')
 
-       try:
+        columnLabels = next(spamInput)
+
+        try:
            columnIndex = columnLabels.index(columnName)
-       except:
+        except:
            print columnLabels
            return "Unknown column"
 
-       firstRow = next(spamInput)
+        firstRow = next(spamInput)
 
-       previousValue = firstRow[columnIndex]
-       previousState = 'Straight'
+        previousValue = firstRow[columnIndex]
+        previousState = 'Straight'
 
-       totalRows = transformedRows = 1
-       for row in spamInput:
+        totalRows = transformedRows = 1
+        for row in spamInput:
            totalRows+=1
            try:
                if row[columnIndex] > previousValue:
@@ -82,23 +82,23 @@ def definedMoves():
            except:
                continue
 
-       return "Transformation Successful"
+        return "Transformation Successful"
 
 def sameValues(columnName):
     with open('../record.csv', 'rb') as inputFile , open('../_'+columnName+'_sameValues_record.csv', 'wb') as outputFile:
-       spamInput = csv.reader(inputFile, delimiter=',')
-       spamOutput = csv.writer(outputFile, delimiter=',')
-       
-       columnLabels = next(spamInput)
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(outputFile, delimiter=',')
 
-       try:
+        columnLabels = next(spamInput)
+
+        try:
            columnIndex = columnLabels.index(columnName)
-       except:
+        except:
            return "Unknown column"
 
-       previousValue = -1
-       totalRows = transformedRows = 1
-       for row in spamInput:
+        previousValue = -1
+        totalRows = transformedRows = 1
+        for row in spamInput:
            totalRows+=1
            try:
                if int(row[columnIndex]) != int(previousValue):
@@ -109,8 +109,8 @@ def sameValues(columnName):
                print row
                continue
 
-       print totalRows,' ',transformedRows
-       return "Transformation Successful"
+        print totalRows,' ',transformedRows
+        return "Transformation Successful"
 
 def direction(columnName):
     with open(filePath, 'rb') as inputFile, open(fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
@@ -128,8 +128,8 @@ def direction(columnName):
         first = int(next(spamInput)[columIndex])
         previous = int(next(spamInput)[columnIndex])
 
-        (direction = 0) if (first > previous) else (direction = 1)
-        
+        direction = (0 if (first > previous) else 1)
+
         for row in spamInput:
             totalRows += 1
             try:
@@ -142,7 +142,7 @@ def direction(columnName):
                         previous = int(row[columnIndex])
                         outFile.write("Decreasing")
 
-                else previous > int(row[columnIndex]):
+                elif previous > int(row[columnIndex]):
                     if direction == 0:
                         previous = int(row[columnIndex])
                         continue
@@ -153,25 +153,4 @@ def direction(columnName):
 
                 else:
                     previous = int(row[columnIndex])
-
-        print totalRows + "rows transformed."
-        return "Transformation Successfull"
-
-
-
-'''
-with open('../../Downloads/record.csv', 'rb') as csvfile:
-   spamreader = csv.reader(csvfile, delimiter=',')
-   row1 = next(spamreader)
-
-   print row1.index('Timestamp')
-   time.sleep(5)
-   for row in spamreader:
-        for item in row:
-            temp.append(item.strip())
-        
-        print temp
-        temp = []
-        print '\n'
-        time.sleep(1)
-        '''
+                    continue
