@@ -73,8 +73,10 @@ def sameValues(columnName):
 
 def direction(columnName):
     with open(filePath, 'rb') as inputFile, open(fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
-        spamreader = csv.reader(inputFile, delimiter=',')
-        columnLabels = next(spamreader)
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(inputFile, delimiter=',')
+
+        columnLabels = next(spamInput)
 
         try:
             columnIndex = columLabels.index(columnName)
@@ -82,12 +84,12 @@ def direction(columnName):
             return "Unknown column"
 
         totalRows = 0
-        first = int(next(spamreader)[columIndex])
-        previous = int(next(spamreader)[columnIndex])
+        first = int(next(spamInput)[columIndex])
+        previous = int(next(spamInput)[columnIndex])
 
         (direction = 0) if (first > previous) else (direction = 1)
         
-        for row in spamreader:
+        for row in spamInput:
             totalRows += 1
             try:
                 if previous < int(row[columnIndex]):
