@@ -27,17 +27,17 @@ def definedMoves():
                if row[columnIndex] > previousValue:
                    if previousState != 'Left':
                        transformedRows+=1
-                       outputFile.write("Left")
+                       outputFile.write(previousState)
                    previousState = "Left"
                elif row[columnIndex] < previousValue:
                    if previousState != 'Right':
                        transformedRows+=1
-                       outputFile.write("Right")
+                       outputFile.write(previousState)
                    previousState = "Right"
                elif row[columnIndex] == previousValue:
                    if previousState != 'Straight':
                        transformedRows+=1
-                       outputFile.write("Straight")
+                       outputFile.write(previousState)
                    previousState = "Straight"
                previousValue = row[columnIndex]
            except:
