@@ -71,6 +71,50 @@ def sameValues(columnName):
        print totalRows,' ',transformedRows
        return "Transformation Successful"
 
+def direction(columnName):
+    with open(filePath, 'rb') as inputFile, open(fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+        spamreader = csv.reader(inputFile, delimiter=',')
+        columnLabels = next(spamreader)
+
+        try:
+            columnIndex = columLabels.index(columnName)
+        except:
+            return "Unknown column"
+
+        totalRows = 0
+        first = int(next(spamreader)[columIndex])
+        previous = int(next(spamreader)[columnIndex])
+
+        (direction = 0) if (first > previous) else (direction = 1)
+        
+        for row in spamreader:
+            totalRows += 1
+            try:
+                if previous < int(row[columnIndex]):
+                    if direction == 1:
+                        previous = int(row[columIndex])
+                        continue
+                    else:
+                        direction = 1
+                        previous = int(row[columnIndex])
+                        outFile.write("Decreasing")
+
+                else previous > int(row[columnIndex]):
+                    if direction == 0:
+                        previous = int(row[columnIndex])
+                        continue
+                    else:
+                        direction = 0
+                        previous = int(row[columnIndex])
+                        outFile.write("Increasing")
+
+                else:
+                    previous = int(row[columnIndex])
+
+        print totalRows + "rows transformed."
+        return "Transformation Successfull"
+
+
 print definedMoves()
 print sameValues("US_2")
 
