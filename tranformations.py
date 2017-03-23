@@ -13,7 +13,7 @@ def getClass(value, classesList):
     return "No-Class"
 
 def stepSize(columnName, classesList):
-    with open(filePath, 'rb') as inputFile, open(fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('records/' + fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -46,7 +46,7 @@ def stepSize(columnName, classesList):
 
 def definedMoves():
     columnName = "YAW"
-    with open(filePath, 'rb') as inputFile, open(fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('records/' + fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -89,7 +89,7 @@ def definedMoves():
         return "Transformation Successful"
 
 def sameValues(columnName):
-    with open(filePath, 'rb') as inputFile, open(getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -116,26 +116,30 @@ def sameValues(columnName):
         print totalRows,' ',transformedRows
         return "Transformation Successful"
 
+
 def direction(columnName):
-    with open(filePath, 'rb') as inputFile, open(getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
         columnLabels = next(spamInput)
 
         try:
-            columnIndex = columLabels.index(columnName)
+            columnIndex = columnLabels.index(columnName)
         except:
             return "Unknown column"
 
         totalRows = 0
-        first = int(next(spamInput)[columIndex])
+        transformedRows = 0
+        first = int(next(spamInput)[columnIndex])
         previous = int(next(spamInput)[columnIndex])
 
         direction = (0 if (first > previous) else 1)
 
         for row in spamInput:
             totalRows += 1
+            if(int(row[columnIndex]) == 0):
+                continue
             try:
                 if previous < int(row[columnIndex]):
                     if direction == 1:
@@ -144,7 +148,8 @@ def direction(columnName):
                     else:
                         direction = 1
                         previous = int(row[columnIndex])
-                        spamOutput.writerow("Decreasing")
+                        spamOutput.writerow([row[0], "Decreasing"])
+                        transformedRows += 1
 
                 elif previous > int(row[columnIndex]):
                     if direction == 0:
@@ -153,7 +158,8 @@ def direction(columnName):
                     else:
                         direction = 0
                         previous = int(row[columnIndex])
-                        spamOutput.writerow("Increasing")
+                        spamOutput.writerow([row[0], "Increasing"])
+                        transformedRows += 1
 
                 else:
                     previous = int(row[columnIndex])
@@ -162,8 +168,70 @@ def direction(columnName):
                 print row
                 continue
 
-        print totalRows + "rows transformed."
+        print "Total Rows: " + str(totalRows) + " Transformed Rows: " + str(transformedRows)
         return "Transformation Successful"
 
+
+def rate(columnName, timeInterval):
+    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_rate_' + columnName + '.csv', 'wb') as outputFile:
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(outputFile, delimiter=',')
+
+        columnLabels = next(spamInput)
+
+        try:
+            columnIndex = columnLabels.index(columnName)
+        except:
+            return "Unknown column"
+
+        totalRows = 0
+        transformedRows = 0
+        first = next(spamInput)
+        previous = next(spamInput)
+
+        (direction, first)  = ((0, previous) if (int(first[columnIndex]) > int(previous[columnIndex])) 
+                                else ((1, previous) if (int(first[columnIndex]) > int(previous[columnIndex])) else (1, first)))
+        
+        for row in spamInput:
+            totalRows += 1
+            if(int(row[columnIndex]) == 0):
+                continue
+            try:
+                if int(previous[columnIndex]) < int(row[columnIndex]):
+                    if direction == 1:
+                        previous = row
+                        continue
+                    else:
+                        direction = 1
+                        previous = row
+                        print (int(row[columnIndex]), int(first[columnIndex]))
+                        rate_value = ((float(row[columnIndex]) - float(first[columnIndex])) / (float(row[0]) - float(first[0])))
+                        spamOutput.writerow([row[0], rate_value])
+                        transformedRows += 1
+
+                elif int(previous[columnIndex]) > int(row[columnIndex]):
+                    if direction == 0:
+                        previous = row
+                        continue
+                    else:
+                        direction = 0
+                        previous = row
+                        print (int(row[columnIndex]), int(first[columnIndex]))
+                        rate_value = ((float(row[columnIndex]) - float(first[columnIndex])) / (float(row[0]) - float(first[0])))
+                        spamOutput.writerow([row[0], rate_value])
+                        transformedRows += 1
+
+                else:
+                    previous = row
+                    continue
+            except:
+                print row
+                continue
+
+        print "Total Rows: " + str(totalRows) + " Transformed Rows: " + str(transformedRows)
+        return "Transformation Successful"
+
+
 filePath = sys.argv[1]
-direction("US_3")
+#print direction("US_3")
+print rate("US_3", 10)
