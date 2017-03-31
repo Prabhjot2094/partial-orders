@@ -1,4 +1,7 @@
 # Swap Files
-*~ 
+*~
+
+*.swp
+*.swo 
 
 *.DS_Store

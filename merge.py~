@@ -61,9 +61,10 @@ def mergeFiles(outFileName,fileList):
             pos = getMin(dataList)
             #emptyList = map(lambda i:"",range(pos-1))
 
-            row = dataList[pos].split(',')
-            row[-1] = row[-1].strip("\r\n")
-            spamOutput.writerow(getList(dataListCopy))
+            row = getList(dataListCopy)
+            row[0] = dataList[pos].split(',')[0]
+
+            spamOutput.writerow(row)
             dataList[pos] = fileObjectList[pos].readline()
 
             if dataList[pos]!='':
