@@ -1,2 +1,4 @@
-# Directories
-transformations/
+# Swap Files
+*~ 
+
+*.DS_Store
