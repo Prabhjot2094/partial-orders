@@ -150,7 +150,7 @@ def direction(columnName):
                     else:
                         direction = 1
                         previous = int(row[columnIndex])
-                        spamOutput.writerow([row[0], 0])
+                        spamOutput.writerow([row[0], "Decreasing"])
                         transformedRows += 1
 
                 elif previous > int(row[columnIndex]):
@@ -160,7 +160,7 @@ def direction(columnName):
                     else:
                         direction = 0
                         previous = int(row[columnIndex])
-                        spamOutput.writerow([row[0], 1])
+                        spamOutput.writerow([row[0], "Increasing"])
                         transformedRows += 1
 
                 else:
