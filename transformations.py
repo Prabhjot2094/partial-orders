@@ -13,7 +13,7 @@ def getClass(value, classesList):
     return "No-Class"
 
 def stepSize(columnName, classesList):
-    with open(filePath, 'rb') as inputFile, open('records/' + fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('transformations/stepSize/' + fileName + '_stepSize_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -46,7 +46,7 @@ def stepSize(columnName, classesList):
 
 def definedMoves():
     columnName = "YAW"
-    with open(filePath, 'rb') as inputFile, open('records/' + fileName + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('transformations/definedMoves/' + fileName + '_definedMoves_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -89,7 +89,7 @@ def definedMoves():
         return "Transformation Successful"
 
 def sameValues(columnName):
-    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('transformations/sameValues/' + getFileName() + '_sameValues_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -118,7 +118,7 @@ def sameValues(columnName):
 
 
 def direction(columnName):
-    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('transformations/direction/' + getFileName() + '_direction_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -173,7 +173,7 @@ def direction(columnName):
 
 
 def rate(columnName, timeInterval):
-    with open(filePath, 'rb') as inputFile, open('records/' + getFileName() + '_rate_' + columnName + '.csv', 'wb') as outputFile:
+    with open(filePath, 'rb') as inputFile, open('transformations/rate/' + getFileName() + '_rate_' + columnName + '.csv', 'wb') as outputFile:
         spamInput = csv.reader(inputFile, delimiter=',')
         spamOutput = csv.writer(outputFile, delimiter=',')
 
@@ -232,6 +232,14 @@ def rate(columnName, timeInterval):
         return "Transformation Successful"
 
 
+column = "US_3"
+ultrasonic_classes = ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '91-100', '101-110',
+                        '111-120', '121-130', '131-140', '141-150', '151-160', '161-170', '171-180', '181-190', '191-200']
 filePath = sys.argv[1]
-#print direction("US_3")
-print rate("US_3", 10)
+fileName = getFileName()
+print stepSize(column, ultrasonic_classes)
+print definedMoves()
+print sameValues(column)
+print direction(column)
+print rate(column, 10)
+
