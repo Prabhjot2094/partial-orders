@@ -31,7 +31,7 @@ def printThread():
             split_row = row.split('@')
             for r in split_row:
                 if len(r)!=0:
-                    print r.split('#')
+                    print r.split(',')
             
             leftover_data = ''
             if row[-1] != '@':
