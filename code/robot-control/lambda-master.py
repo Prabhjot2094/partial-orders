@@ -9,7 +9,7 @@ def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
 
 def sendMotorSpeeds(speedLeft, speedRight):
-    bus.write_block_data(address, 0, [lowByte(speedLeft), highByte(speedLeft), lowByte(speedRight), highByte(speedRight)])
+    bus.write_block_data(address, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
 
 def readNumber():
     number = bus.read_byte(address)
