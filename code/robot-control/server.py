@@ -40,13 +40,35 @@ def main():
 
 
 def clientThread(conn):
+    # s = SEND A SINGLE RECORD
+    # f = SEND RECORDS CONTINUOUSLY AT FREQUENCY f
+    # c = SEND RECORDS CONTINUOUSLY AFAP
 
     try:
-        init = conn.recv(512)
-        print init
+        initCharacter = conn.recv(128)
 
-        #while 1:
-        conn.send("1a,b,c@4,5,6@1,2,3@a,b,c@4,5,6@1,2,3@a,b,c@4,5,6");
+        if initCharacter is 's':
+            conn.send(latest_record)
+            conn.close()
+            return
+
+        elif initCharacter is 'f':
+            frequency = conn.recv(128)
+            prev_timestamp = float(latest_record[0])
+            
+            while 1:
+                current_timestamp = float(latest_record[0])
+                if (current_timestamp-prev_timestamp) > frequency:
+                    prev_timestamp = current_timestamp
+                    conn.send(latest_record);
+
+        elif initCharacter is 'c':
+            while 1:
+                conn.send(latest_record)
+
+
+        if rows_requested is 1:
+        else: 
 
     except socket.error as msg:
         conn.close()    

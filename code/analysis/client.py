@@ -8,15 +8,15 @@ import shutil
 
 data = Queue()
 def main():
-        begin_time = time.time()
+	begin_time = time.time()
 
-        t=Thread(target = printThread)
-        t.start()
-        
-        t=Thread(target = client,args = {'Init'})
-        t.start()
+	t=Thread(target = printThread)
+	t.start()
+	
+	t=Thread(target = client,args = {'1,0'}) # OR {1,freq}
+	t.start()
 
-        print "Time Taken = ",time.time()-begin_time
+	print "Time Taken = ",time.time()-begin_time
 
 def printThread():
     main_row = []
