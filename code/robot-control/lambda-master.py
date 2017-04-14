@@ -24,7 +24,11 @@ def writeMotorSpeeds(speedLeft, speedRight):
         writeMotorSpeeds(speedLeft, speedRight)
 
 def readSensorData():
+    global sensorData
+    global sensorDataReady
+
     sensorDataReady = 0
+
     try:
         rawData = bus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
 
@@ -36,14 +40,12 @@ def readSensorData():
             if sensorData[sensorIndex] > 1023:
                 readSensorData()
 
-        print sensorData
-
     except IOError:
         readSensorData()
 
     sensorDataReady = 1
 
-dataReadTimer = RepeatedTimer(DATA_READ_INTERVAL/1000, readSensorData)
+dataReadTimer = RepeatedTimer(DATA_READ_INTERVAL/10, readSensorData)
 
 def drive(command, speed=127):
     dataReadTimer.start()
@@ -73,10 +75,3 @@ def drive(command, speed=127):
     if command == 'autopilot-sonar-yaw':
         pass
 
-while True:
-    cmd = input("Enter command: ")
-    if cmd == 'w':
-        drive('forward')
-
-    if cmd == 'h':
-        drive('halt')
