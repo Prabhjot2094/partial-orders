@@ -12,19 +12,35 @@ def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
 
 def writeMotorSpeeds(speedLeft, speedRight):
-    bus.write_block_data(address, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+    try:
+        bus.write_block_data(address, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+    except IOError:
+        writeMotorSpeeds(speedLeft, speedRight)
 
 def readSensorData():
-    rawData = bus.read_i2c_block_data(address, 0)
-    for sensorIndex in range(0, sensorCount):
-        sensorData[sensorIndex] = getWord(rawData[2*i + 1], rawData[2*i +0])
+    try:
+        rawData = bus.read_i2c_block_data(address, 0)
+
+        if (len(rawData) != 32):
+            readSensorData()
+
+        for sensorIndex in range(0, sensorCount):
+            sensorData[sensorIndex] = getWord(rawData[2*sensorIndex + 1], rawData[2*sensorIndex + 0])
+            if sensorData[sensorIndex] > 1023:
+                readSensorData()
+
+    except IOError:
+        readSensorData()
+
 
 while True:
+    start = time.time()
     readSensorData()
-
-    print sensorData
+    elapsed = time.time() - start
+    print elapsed
     
-    var1 = input("Enter Left Speed: ")
-    var2 = input("Enter Right Speed: ")
+    #var1 = input("Enter Left Speed: ")
+    #var2 = input("Enter Right Speed: ")
 
-    writeMotorSpeeds(var1, var2)
+    writeMotorSpeeds(0, 0)
+    time.sleep(.250)
