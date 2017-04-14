@@ -2,23 +2,45 @@ import smbus
 import time
 
 bus = smbus.SMBus(1)
-
 address = 0x04
+sensorCount = 11
 
-def writeNumber(cmd, value):
-    bus.write_word_data(address, cmd, value)
-    # bus.write_byte_data(address, 0, value)
-    return -1
+sensorData = [0] * sensorCount
 
-def readNumber():
-    number = bus.read_byte(address)
-    # number = bus.read_byte_data(address, 1)
-    return number
+def highByte (number) : return number >> 8
+def lowByte (number) : return number & 0x00FF
+def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
+
+def writeMotorSpeeds(speedLeft, speedRight):
+    try:
+        bus.write_block_data(address, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+    except IOError:
+        writeMotorSpeeds(speedLeft, speedRight)
+
+def readSensorData():
+    try:
+        rawData = bus.read_i2c_block_data(address, 0)
+
+        if (len(rawData) != 32):
+            readSensorData()
+
+        for sensorIndex in range(0, sensorCount):
+            sensorData[sensorIndex] = getWord(rawData[2*sensorIndex + 1], rawData[2*sensorIndex + 0])
+            if sensorData[sensorIndex] > 1023:
+                readSensorData()
+
+    except IOError:
+        readSensorData()
+
 
 while True:
-    var1 = input("Enter Left Speed: ")
-    var2 = input("Enter Right Speed: ")
+    start = time.time()
+    readSensorData()
+    elapsed = time.time() - start
+    print elapsed
+    
+    #var1 = input("Enter Left Speed: ")
+    #var2 = input("Enter Right Speed: ")
 
-    writeNumber(0, var1)
-    writeNumber(1, var2)
-    # sleep one second
+    writeMotorSpeeds(0, 0)
+    time.sleep(.250)
