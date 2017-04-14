@@ -1,11 +1,16 @@
 import smbus
 import time
+from repeatedtimer import RepeatedTimer
+
+# configuration variables
+ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
+SENSOR_COUNT                = 11    # no of sensors on arduino
+DATA_READ_INTERVAL          = 10    # milliseconds
+AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
 bus = smbus.SMBus(1)
-address = 0x04
-sensorCount = 11
 
-sensorData = [0] * sensorCount
+sensorData = [0] * SENSOR_COUNT
 sensorDataReady = 0
 
 def highByte (number) : return number >> 8
@@ -14,19 +19,19 @@ def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
-        bus.write_block_data(address, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+        bus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
 
 def readSensorData():
     sensorDataReady = 0
     try:
-        rawData = bus.read_i2c_block_data(address, 0)
+        rawData = bus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
 
         if (len(rawData) != 32):
             readSensorData()
 
-        for sensorIndex in range(0, sensorCount):
+        for sensorIndex in range(0, SENSOR_COUNT):
             sensorData[sensorIndex] = getWord(rawData[2*sensorIndex + 1], rawData[2*sensorIndex + 0])
             if sensorData[sensorIndex] > 1023:
                 readSensorData()
@@ -36,10 +41,32 @@ def readSensorData():
 
     sensorDataReady = 1
 
+dataReadTimer = RepeatedTimer(DATA_READ_INTERVAL/1000, readSensorData)
 
-while True:
-    readSensorData()
-    print sensorData
-    
-    writeMotorSpeeds(0, 0)
-    time.sleep(.250)
+def drive(command, speed=127):
+    dataReadTimer.start()
+
+    if command == 'forward':
+        writeMotorSpeeds(speed, speed)
+
+    if command == 'backward':
+        writeMotorSpeeds(-speed, -speed)
+
+    if command == 'left':
+        writeMotorSpeeds(0, speed)
+
+    if command == 'right':
+        writeMotorSpeeds(speed, 0)
+
+    if command == 'stop':
+        writeMotorSpeeds(0, 0)
+
+    if command == 'halt':
+        writeMotorSpeeds(0, 0)
+        dataReadTimer.stop()
+
+    if command == 'autopilot-sonar':
+        pass
+
+    if command == 'autopilot-sonar-yaw':
+        pass
