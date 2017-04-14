@@ -6,6 +6,7 @@ address = 0x04
 sensorCount = 11
 
 sensorData = [0] * sensorCount
+sensorDataReady = 0
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
@@ -18,6 +19,7 @@ def writeMotorSpeeds(speedLeft, speedRight):
         writeMotorSpeeds(speedLeft, speedRight)
 
 def readSensorData():
+    sensorDataReady = 0
     try:
         rawData = bus.read_i2c_block_data(address, 0)
 
@@ -32,15 +34,12 @@ def readSensorData():
     except IOError:
         readSensorData()
 
+    sensorDataReady = 1
+
 
 while True:
-    start = time.time()
     readSensorData()
-    elapsed = time.time() - start
-    print elapsed
+    print sensorData
     
-    #var1 = input("Enter Left Speed: ")
-    #var2 = input("Enter Right Speed: ")
-
     writeMotorSpeeds(0, 0)
     time.sleep(.250)
