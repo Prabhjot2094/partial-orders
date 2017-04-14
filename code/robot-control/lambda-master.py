@@ -36,6 +36,8 @@ def readSensorData():
             if sensorData[sensorIndex] > 1023:
                 readSensorData()
 
+        print sensorData
+
     except IOError:
         readSensorData()
 
@@ -70,3 +72,11 @@ def drive(command, speed=127):
 
     if command == 'autopilot-sonar-yaw':
         pass
+
+while True:
+    cmd = input("Enter command: ")
+    if cmd == 'w':
+        drive('forward')
+
+    if cmd == 'h':
+        drive('halt')
