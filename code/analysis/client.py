@@ -60,7 +60,7 @@ def printThread():
 def client(*args):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
         host = "0.0.0.0"
-        port = 50000
+        port = 50001
         
         try :
                 s.connect((host, port)) 
