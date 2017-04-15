@@ -30,17 +30,28 @@ def main():
     s.listen(0)
     print 'Socket now listening'
      
+    try:
+        dataThread = Thread(target=lm.getData)
+        dataThread.setDaemon(True)
+        dataThread.start()
+    except Exception as e:
+        print "Exception in Sensor Data thread, "+e
+        sys.exit(0)
+    
     i=0
-    dataThread = Thread(target=lm.getData)
-    dataThread.start()
     while 1:
         i+=1
         conn, addr = s.accept()
         
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
-        
-        t=Thread(target = clientThread,args = (conn,))
-        t.start()
+       
+        try:
+            t=Thread(target = clientThread,args = (conn,))
+            t.setDaemon(True)
+            t.start()
+	except Exception as e:
+            print "Exception in client connection thread, "+e
+            sys.exit(0)
         
 
 def clientThread(conn):
@@ -49,9 +60,8 @@ def clientThread(conn):
     # c = SEND RECORDS CONTINUOUSLY AFAP
 
     try:
-        initCharacter = conn.recv(128)
+        initCharacter = conn.recv(1)
         print str(initCharacter)
-        print 'c'
 
         if initCharacter == "s":
             while lm.sensorDataReady is 0:
@@ -64,23 +74,18 @@ def clientThread(conn):
             return
 
         elif initCharacter == "f":
-            frequency = conn.recv(128)
-
-            while lm.sensorDataReady is 0:
-                continue
-            prev_timestamp = float(lm.sensordata[0])
-            
+            frequency = float(conn.recv(38))
+            prevData = ""
             while 1:
-                current_timestamp = float(lm.sensordata[0])
-                if (current_timestamp-prev_timestamp) > frequency:
-                    prev_timestamp = current_timestamp
-                    while lm.sensorDataReady is 0:
-                        continue
-                    data = '@'+str(lm.sensorData)+'@'
+                while lm.sensorDataReady is 0:
+                    continue
+                data = '@'+str(lm.sensorData)+'@'
+                if prevData != data:
                     conn.send(data);
+                prevData = data
+                time.sleep(frequency)
 
         elif str(initCharacter)=="c":
-            print "In the shit"
             prevData = ""
             while 1:
                 while lm.sensorDataReady is 0:
