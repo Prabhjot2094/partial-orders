@@ -1,16 +1,19 @@
 import smbus
 import time
 import threading
+import serial
 
 # configuration variables
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
-SENSOR_COUNT                = 11    # no of sensors on arduino
+ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
+SENSOR_TILE_DATA_COUNT      = 24
 DATA_READ_INTERVAL          = 10    # milliseconds
 AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
-bus = smbus.SMBus(1)
+arduinoBus = smbus.SMBus(1)
+sensorTile = serial.Serial('/dev/ttyACM0', 9600)
 
-sensorData = [0] * (1 + SENSOR_COUNT)
+sensorData = [0] * (1 + SENSOR_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
 dataReadFlag = False
 averageInterval = 0
@@ -29,14 +32,17 @@ def main():
     except Exception as e:
         print "Exception in dataReadThread " + e
 
-    dataReadFlag = True
+    dataReadFlag = False
+
     while True:
-        pass
-    
+        sensorTile.flushInput()
+        print sensorTile.readline()
+        time.sleep(0.500)
+        
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
-        bus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+        arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
 
@@ -53,16 +59,14 @@ def readSensorData():
             currentTime = time.time()
             if currentTime >= nextDataReadTime:
                 nextDataReadTime += DATA_READ_INTERVAL/100.0
-                print '{0:.8f}'.format(currentTime)        
-                #time.sleep(0.001)
-                
+                print '{0:.8f}'.format(currentTime)
 
             #sensorDataReady = True
         
     '''
     try:
         sensorData[0] = time.time()
-        rawData = bus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
+        rawData = arduinoBus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
 
         if (len(rawData) != 32):
             readSensorData()
