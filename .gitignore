@@ -1,6 +1,6 @@
 # Swap Files
 *~
-
+*.pyc
 *.swp
 *.swo 
 
