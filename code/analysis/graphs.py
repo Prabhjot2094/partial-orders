@@ -1,9 +1,7 @@
+import sys
 from threading import Thread
 from multiprocessing import Queue
 import dataprocessing as data
-
-dataProcessingThread = Thread(target=data.processData)
-dataProcessingThread.start()
 
 import random
 import pyqtgraph.opengl as gl
@@ -274,7 +272,37 @@ class scatter_plot:
 
 ## Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
-    line_graph()
-    #line_graph_3d()
-    #scatter_plot()
-    #scatter_plot_3d()
+	try:
+		try:
+			graphToPlot = sys.argv[1]
+			dataRequestParams = sys.argv[2:]
+		except:
+			graphToPlot = "scatter"
+			dataRequestParams = ['c']
+
+		if dataRequestParams[0]=='f':
+			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0],dataRequestParams[1]))
+		elif dataRequestParams[0] in ['c','s']:
+			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0]))
+		else:
+			print "Incorrect Parameters for client, Requesting continuous data"
+			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0]))
+
+		dataProcessingThread.setDaemon(True)
+		dataProcessingThread.start()
+	
+		if graphToPlot == "line":
+			line_graph()
+		elif graphToPlot == "line_3d":
+			line_graph_3d()
+		elif graphToPlot == "scatter":
+			scatter_plot()
+		elif graphToPlot == "scatter_3d":
+			scatter_plot_3d()
+		else:
+			print "incorrect graph name, rendering scatter plot"
+			scatter_plot()
+
+	except Exception as e:
+		print "Exception caught in graph module, "+str(e)
+		sys.exit(0)

@@ -16,10 +16,18 @@ def initQueue():
 
 	print "Complete"
 
-def processData():
+def processData(*args):
+	try:
+		if args[0]=='f':
+			clientThread = Thread(name = "client", target=client.main, args=(args[1],args[0]))
+		else:
+			clientThread = Thread(name = "client", target=client.main, args=(args[0]))
 
-	clientThread = Thread(target=client.main, args=('c'))
-	clientThread.start()
+		clientThread.setDaemon(True)
+		clientThread.start()
+	except Exception as e:
+		print "Exception in client spawned from DataProcessing thread , "+str(e)
+		raise Exception('Client thread encountered an error')
 
 	while True:
 	    if int(client.formattedData.qsize()) == 0:
@@ -28,7 +36,6 @@ def processData():
             tmp = client.formattedData.get()
             processedData.put(tmp[:3])
 
-	print "Complete"
 
 
 if __name__ == '__main__':

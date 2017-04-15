@@ -10,14 +10,23 @@ import shutil
 rawData = Queue()
 formattedData = Queue()
 
-def main(requestParams):
+def main(*params):
 	begin_time = time.time()
 
-	t=Thread(target = printThread)
-	t.start()
+	try:
+		t=Thread(target = printThread)
+		t.setDaemon(True)
+		t.start()
 	
-	t=Thread(target = client,args = {requestParams}) # OR {1,freq}
-	t.start()
+                if len(params)==2:
+		    t=Thread(target = client,args = (params[1],params[0])) # OR {1,freq}
+                else:
+		    t=Thread(target = client,args = (params[0])) # OR {1,freq}
+		t.setDaemon(True)
+		t.start()
+	except Exception as e:
+		print "Exception in client thread, "+str(e)
+		raise Exception('Client thread encountered an error')
 
 	print "Time Taken = ",time.time()-begin_time
 
@@ -58,7 +67,10 @@ def client(*args):
 
                 s.settimeout(10.0)
 
+                print args
                 s.send(args[0])
+                if args[0]=='f':
+                    s.send(args[1])
 
                 while True:
                         tm = s.recv(64)
