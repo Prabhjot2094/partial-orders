@@ -14,7 +14,7 @@ import os
 def main():
     
     HOST = '0.0.0.0'
-    PORT = 50000
+    PORT = 50001
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print 'Socket created'
