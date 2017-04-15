@@ -1,6 +1,6 @@
 import smbus
 import time
-from repeatedtimer import RepeatedTimer
+import threading
 
 # configuration variables
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
@@ -11,11 +11,20 @@ AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 bus = smbus.SMBus(1)
 
 sensorData = [0] * (1 + SENSOR_COUNT)
-sensorDataReady = 0
+sensorDataReady = False
+dataReadFlag = False
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
+
+def main():
+    try:
+        dataReadThread = threading.Thread(target=readSensorData)
+        dataReadThread.setDaemon(True)
+        dataReadThread.start()
+    except Exception as e:
+        print "Exception in dataReadThread " + e
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
@@ -27,8 +36,14 @@ def readSensorData():
     global sensorData
     global sensorDataReady
 
-    sensorDataReady = 0
-    print '{0:.8f}'.format(time.time())
+    startTime = time.time()
+
+    while dataReadFlag:
+        sensorDataReady = False
+        print '{0:.8f}'.format(time.time())
+        sensorDataReady = True
+        
+        time.sleep(DATA_READ_INTERVAL/1000 - (time.time() - startTime))
     '''
     try:
         sensorData[0] = time.time()
@@ -46,12 +61,9 @@ def readSensorData():
     except IOError:
         readSensorData()
     '''
-    sensorDataReady = 1
-
-dataReadTimer = RepeatedTimer(DATA_READ_INTERVAL/10, readSensorData)
 
 def drive(command, speed=127):
-    dataReadTimer.start()
+    dataReadFlag = True
 
     if command == 'forward':
         writeMotorSpeeds(speed, speed)
@@ -70,7 +82,7 @@ def drive(command, speed=127):
 
     if command == 'halt':
         writeMotorSpeeds(0, 0)
-        dataReadTimer.stop()
+        dataReadFlag = False
 
     if command == 'autopilot-sonar':
         pass
