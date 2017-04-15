@@ -1,6 +1,6 @@
 import smbus
 import time
-from repeatedtimer import RepeatedTimer
+import threading
 
 # configuration variables
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
@@ -10,12 +10,21 @@ AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
 bus = smbus.SMBus(1)
 
-sensorData = [0] * SENSOR_COUNT
-sensorDataReady = 0
+sensorData = [0] * (1 + SENSOR_COUNT)
+sensorDataReady = False
+dataReadFlag = False
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
+
+def main():
+    try:
+        dataReadThread = threading.Thread(target=readSensorData)
+        dataReadThread.setDaemon(True)
+        dataReadThread.start()
+    except Exception as e:
+        print "Exception in dataReadThread " + e
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
@@ -27,28 +36,34 @@ def readSensorData():
     global sensorData
     global sensorDataReady
 
-    sensorDataReady = 0
+    startTime = time.time()
 
+    while dataReadFlag:
+        sensorDataReady = False
+        print '{0:.8f}'.format(time.time())
+        sensorDataReady = True
+        
+        time.sleep(DATA_READ_INTERVAL/1000 - (time.time() - startTime))
+    '''
     try:
+        sensorData[0] = time.time()
         rawData = bus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
 
         if (len(rawData) != 32):
             readSensorData()
 
-        for sensorIndex in range(0, SENSOR_COUNT):
-            sensorData[sensorIndex] = getWord(rawData[2*sensorIndex + 1], rawData[2*sensorIndex + 0])
+
+        for sensorIndex in range(1, SENSOR_COUNT + 1):
+            sensorData[sensorIndex] = getWord(rawData[2*(sensorIndex-1) + 1], rawData[2*(sensorIndex-1) + 0])
             if sensorData[sensorIndex] > 1023:
                 readSensorData()
 
     except IOError:
         readSensorData()
-
-    sensorDataReady = 1
-
-dataReadTimer = RepeatedTimer(DATA_READ_INTERVAL/10, readSensorData)
+    '''
 
 def drive(command, speed=127):
-    dataReadTimer.start()
+    dataReadFlag = True
 
     if command == 'forward':
         writeMotorSpeeds(speed, speed)
@@ -67,7 +82,7 @@ def drive(command, speed=127):
 
     if command == 'halt':
         writeMotorSpeeds(0, 0)
-        dataReadTimer.stop()
+        dataReadFlag = False
 
     if command == 'autopilot-sonar':
         pass
@@ -75,6 +90,3 @@ def drive(command, speed=127):
     if command == 'autopilot-sonar-yaw':
         pass
 
-while True:
-    writeMotorSpeeds(-100, -100)
-    time.sleep(0.250)

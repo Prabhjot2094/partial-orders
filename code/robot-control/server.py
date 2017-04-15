@@ -1,6 +1,9 @@
 '''
     Simple socket server using threads
 '''
+#import lambda-master as lm
+import time
+import lambdaMasterEMU as lm
 import socket
 import sys
 from threading import Thread
@@ -9,6 +12,7 @@ import os
 
 
 def main():
+    
     HOST = '0.0.0.0'
     PORT = 50001
 
@@ -26,18 +30,29 @@ def main():
     s.listen(0)
     print 'Socket now listening'
      
+    try:
+        dataThread = Thread(target=lm.getData)
+        dataThread.setDaemon(True)
+        dataThread.start()
+    except Exception as e:
+        print "Exception in Sensor Data thread, "+e
+        sys.exit(0)
+    
     i=0
     while 1:
         i+=1
         conn, addr = s.accept()
         
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
+       
+        try:
+            t=Thread(target = clientThread,args = (conn,))
+            t.setDaemon(True)
+            t.start()
+	except Exception as e:
+            print "Exception in client connection thread, "+e
+            sys.exit(0)
         
-        t=Thread(target = clientThread,args = (conn,))
-        t.start()
-        
-        print threading.activeCount();
-
 
 def clientThread(conn):
     # s = SEND A SINGLE RECORD
@@ -45,30 +60,42 @@ def clientThread(conn):
     # c = SEND RECORDS CONTINUOUSLY AFAP
 
     try:
-        initCharacter = conn.recv(128)
+        initCharacter = conn.recv(1)
+        print str(initCharacter)
 
-        if initCharacter is 's':
-            conn.send(latest_record)
+        if initCharacter == "s":
+            while lm.sensorDataReady is 0:
+                continue
+            
+            data = '@'+str(lm.sensorData)+'@'            
+            conn.send(data)
             conn.close()
+            
             return
 
-        elif initCharacter is 'f':
-            frequency = conn.recv(128)
-            prev_timestamp = float(latest_record[0])
-            
+        elif initCharacter == "f":
+            frequency = float(conn.recv(38))
+            prevData = ""
             while 1:
-                current_timestamp = float(latest_record[0])
-                if (current_timestamp-prev_timestamp) > frequency:
-                    prev_timestamp = current_timestamp
-                    conn.send(latest_record);
+                while lm.sensorDataReady is 0:
+                    continue
+                data = '@'+str(lm.sensorData)+'@'
+                if prevData != data:
+                    conn.send(data);
+                prevData = data
+                time.sleep(frequency)
 
-        elif initCharacter is 'c':
+        elif str(initCharacter)=="c":
+            prevData = ""
             while 1:
-                conn.send(latest_record)
-
-
-        if rows_requested is 1:
-        else: 
+                if lm.sensorDataReady == 1:
+                    data = '@'+str(lm.sensorData)+'@'
+                    print data
+                    #if prevData != data:
+                    conn.send(data)
+                    #prevData = data
+        else:
+            print "No match"
 
     except socket.error as msg:
         conn.close()    
