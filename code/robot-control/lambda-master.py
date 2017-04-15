@@ -13,6 +13,7 @@ bus = smbus.SMBus(1)
 sensorData = [0] * (1 + SENSOR_COUNT)
 sensorDataReady = False
 dataReadFlag = False
+averageInterval = 0
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
@@ -29,6 +30,8 @@ def main():
         print "Exception in dataReadThread " + e
 
     dataReadFlag = True
+    while True:
+        pass
     
 
 def writeMotorSpeeds(speedLeft, speedRight):
@@ -46,15 +49,15 @@ def readSensorData():
 
     while True:
         if dataReadFlag:
-            sensorDataReady = False
+            #sensorDataReady = False
             currentTime = time.time()
             if currentTime >= nextDataReadTime:
-                nextDataReadTime += DATA_READ_INTERVAL/1000.0
+                nextDataReadTime += DATA_READ_INTERVAL/100.0
                 print '{0:.8f}'.format(currentTime)        
+                #time.sleep(0.001)
+                
 
-        
-        
-            sensorDataReady = True
+            #sensorDataReady = True
         
     '''
     try:
