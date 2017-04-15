@@ -88,12 +88,12 @@ def clientThread(conn):
         elif str(initCharacter)=="c":
             prevData = ""
             while 1:
-                while lm.sensorDataReady is 0:
-                    continue
-                data = '@'+str(lm.sensorData)+'@'
-                if prevData != data:
+                if lm.sensorDataReady == 1:
+                    data = '@'+str(lm.sensorData)+'@'
+                    print data
+                    #if prevData != data:
                     conn.send(data)
-                prevData = data
+                    #prevData = data
         else:
             print "No match"
 

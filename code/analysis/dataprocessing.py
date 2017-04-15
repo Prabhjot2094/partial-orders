@@ -38,5 +38,5 @@ def processData(*args):
 
 
 
-if __name__ == '__main__':
-	processData()
+#if __name__ == '__main__':
+#	processData()
