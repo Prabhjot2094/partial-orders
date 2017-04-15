@@ -19,12 +19,17 @@ def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
 
 def main():
+    global dataReadFlag
+
     try:
         dataReadThread = threading.Thread(target=readSensorData)
         dataReadThread.setDaemon(True)
         dataReadThread.start()
     except Exception as e:
         print "Exception in dataReadThread " + e
+
+    dataReadFlag = True
+    
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
@@ -35,15 +40,22 @@ def writeMotorSpeeds(speedLeft, speedRight):
 def readSensorData():
     global sensorData
     global sensorDataReady
+    global dataReadFlag
 
-    startTime = time.time()
+    nextDataReadTime = time.time()
 
-    while dataReadFlag:
-        sensorDataReady = False
-        print '{0:.8f}'.format(time.time())
-        sensorDataReady = True
+    while True:
+        if dataReadFlag:
+            sensorDataReady = False
+            currentTime = time.time()
+            if currentTime >= nextDataReadTime:
+                nextDataReadTime += DATA_READ_INTERVAL/1000.0
+                print '{0:.8f}'.format(currentTime)        
+
         
-        time.sleep(DATA_READ_INTERVAL/1000 - (time.time() - startTime))
+        
+            sensorDataReady = True
+        
     '''
     try:
         sensorData[0] = time.time()
@@ -63,6 +75,8 @@ def readSensorData():
     '''
 
 def drive(command, speed=127):
+    global dataReadFlag
+    
     dataReadFlag = True
 
     if command == 'forward':
@@ -90,3 +104,4 @@ def drive(command, speed=127):
     if command == 'autopilot-sonar-yaw':
         pass
 
+main()
