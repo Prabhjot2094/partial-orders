@@ -75,3 +75,6 @@ def drive(command, speed=127):
     if command == 'autopilot-sonar-yaw':
         pass
 
+while True:
+    writeMotorSpeeds(-100, -100)
+    time.sleep(0.250)
