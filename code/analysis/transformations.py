@@ -1,3 +1,4 @@
+import math
 import sys
 import csv
 import time
@@ -234,15 +235,56 @@ def rate(columnName, timeInterval):
         print "Total Rows: " + str(totalRows) + " Transformed Rows: " + str(transformedRows)
         return "Transformation Successful"
 
+def coordinates():
+    with open(filePath, 'rb') as inputFile, open('../../data/transformations/sameValues/' + getFileName() + \
+            '_sameValues_.csv', 'wb') as outputFile:
+        
+        spamInput = csv.reader(inputFile, delimiter=',')
+        spamOutput = csv.writer(outputFile, delimiter=',')
 
-column = "US_3"
-ultrasonic_classes = ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '91-100', '101-110',
-                        '111-120', '121-130', '131-140', '141-150', '151-160', '161-170', '171-180', '181-190', '191-200']
+        columnLabels = next(spamInput)
+
+        try:
+           yawColumn = columnLabels.index('YAW')
+           usColumn = columnLabels.index('US_3')
+        except:
+           return "Unknown column"
+
+        firstDataRow = next(spamInput)
+
+        prevX = prevY = 0
+        previousYaw = float(firstDataRow[yawColumn])
+        previousDistance = float(firstDataRow[usColumn])
+        
+        for row in spamInput:
+            currentYaw = float(row[yawColumn])
+            currentDistance = float(row[usColumn])
+
+            distanceDiff = previousDistance-currentDistance
+
+            if currentYaw-previousYaw > 35:
+                previousDistance = currentDistance
+                prevousYaw = currentYaw
+                continue
+
+            x = math.cos(math.radians(currentYaw))*distanceDiff + prevX
+            y = math.sin(math.radians(currentYaw))*distanceDiff + prevY
+
+            spamOutput.writerow([row[0],row[yawColumn],row[usColumn],x,y])
+
+
+
+
+#column = "US_3"
+#ultrasonic_classes = ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '91-100', '101-110',
+#                        '111-120', '121-130', '131-140', '141-150', '151-160', '161-170', '171-180', '181-190', '191-200']
 filePath = sys.argv[1]
 fileName = getFileName()
-print stepSize(column, ultrasonic_classes)
-print definedMoves()
-print sameValues(column)
-print direction(column)
-print rate(column, 10)
+#print stepSize(column, ultrasonic_classes)
+#print definedMoves()
+#print sameValues(column)
+#print direction(column)
+#print rate(column, 10)
+
+coordinates()
 
