@@ -14,7 +14,7 @@ DATA_READ_INTERVAL          = 100    # milliseconds
 AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
 arduinoBus = smbus.SMBus(1)
-sensorTile = serial.Serial('/dev/ttyACM0', 9600)
+sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
 sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
@@ -51,12 +51,13 @@ def main():
         shutdown()
 
 def getFileName():
-    maxInt = -1
-    for f in os.listdir('../../data/live-data/'):
-        num = int(f.split('.')[0].split('_')[1])
-        if num > maxInt:
-            maxInt = num
-    return '../../data/live-data/record_' + str(maxInt + 1) + '.csv'
+    number = 0
+    while True:
+        fileNamePath = '../../data/live-data/record_%d.csv' % number
+        if not os.path.exists(fileNamePath):
+            return fileNamePath
+        else:
+            number += 1
 
 def getTimestamp():
     return time.time() - initialtime
@@ -88,7 +89,10 @@ def sensorTileDataHandler():
             rawData = sensorTile.readline().split(', ')
             if len(rawData) == 24:
                 for sensorIndex in range(0, SENSOR_TILE_DATA_COUNT):
-                    sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
+                    if sensorIndex < 11:
+                        sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = int(rawData[sensorIndex])
+                    else:
+                        sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
                 break
 
             else:
