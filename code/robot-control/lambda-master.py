@@ -2,6 +2,7 @@ import smbus
 import time
 import threading
 import serial
+import sys
 
 # configuration variables
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
@@ -23,22 +24,30 @@ def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
 
 
 def main():
-    global dataReadFlag
-
     try:
-        dataReadThread = threading.Thread(target=readSensorData)
-        dataReadThread.setDaemon(True)
-        dataReadThread.start()
-    except Exception as e:
-        print "Exception in dataReadThread " + e
-        shutdown()
+        global dataReadFlag
+        global sensorDataReady
+        global sensorData
 
-    dataReadFlag = False
+        try:
+            dataReadThread = threading.Thread(target=readSensorData)
+            dataReadThread.setDaemon(True)
+            dataReadThread.start()
+        except Exception as e:
+            print "Exception in dataReadThread " + e
+            shutdown()
 
-    while True:
-        sensorTile.flushInput()
-        print sensorTile.readline()
-        time.sleep(0.500)
+        dataReadFlag = True
+
+        while True:
+            if sensorDataReady:
+                while sensorDataReady:
+                    pass
+                print sensorData
+
+    except KeyboardInterrupt:
+        writeMotorSpeeds(0, 0)
+        sys.exit(0)
 
 
 def arduinoDataHandler():
@@ -66,10 +75,12 @@ def sensorTileDataHandler():
         sensorTile.flushInput()
 
         while True:
-            rawData = sensorTile.readline()
+            rawData = sensorTile.readline().split(', ')
             if len(rawData) == 24:
                 for sensorIndex in range(0, SENSOR_TILE_DATA_COUNT):
-                    sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = rawData[sensorIndex]
+                    sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
+
+                break
 
             else:
                 continue
