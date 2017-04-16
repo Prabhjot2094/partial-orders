@@ -14,7 +14,10 @@ DATA_READ_INTERVAL          = 100    # milliseconds
 AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
 arduinoBus = smbus.SMBus(1)
-sensorTile = serial.Serial('/dev/ttyACM1', 9600)
+try:
+    sensorTile = serial.Serial('/dev/ttyACM0', 9600)
+except:
+    sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
 sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
@@ -45,7 +48,10 @@ def main():
         dataReadFlag = True
 
         while True:
-            pass
+            drive('forward', 255)
+            time.sleep(1)
+            drive('stop')
+            time.sleep(1)
 
     except KeyboardInterrupt:
         shutdown()
@@ -104,6 +110,8 @@ def sensorTileDataHandler():
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
+        while not sensorDataReady:
+            pass
         arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
