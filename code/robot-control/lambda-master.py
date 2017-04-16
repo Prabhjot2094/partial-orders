@@ -1,3 +1,5 @@
+import csv
+import os
 import smbus
 import time
 import threading
@@ -68,6 +70,14 @@ def arduinoDataHandler():
         arduinoDataHandler()
 
 
+def getFileName():
+    maxInt = 1
+    for f in os.listdir('../../data/records/live-data/'):
+        num = f.split('.')[-2][-1]
+        if num>maxInt:
+            maxInt = num
+    return str(maxInt)
+
 def sensorTileDataHandler():
     global sensorData
 
@@ -104,22 +114,24 @@ def readSensorData():
 
     nextDataReadTime = time.time()
 
-    while True:
-        if dataReadFlag:
-            currentTime = time.time()
-            if currentTime >= nextDataReadTime:
-                sensorDataReady = False
+    with open('../../data/records/live-data/record'+getFileName()+'.csv', 'wb') as csvfile:
+        while True:
+            if dataReadFlag:
+                currentTime = time.time()
+                if currentTime >= nextDataReadTime:
+                    sensorDataReady = False
 
-                nextDataReadTime += DATA_READ_INTERVAL/100.0
-                
-                sensorData[0] = currentTime
-                arduinoDataHandler()
-                sensorTileDataHandler()
+                    nextDataReadTime += DATA_READ_INTERVAL/100.0
+                    
+                    sensorData[0] = currentTime
+                    arduinoDataHandler()
+                    sensorTileDataHandler()
 
-                sensorDataReady = True
+                    sensorDataReady = True
+                    csvfile.writerow(sensorData)
 
-        else:
-            time.sleep(0.01)
+            else:
+                time.sleep(0.01)
 
 
 def drive(command, speed=127):

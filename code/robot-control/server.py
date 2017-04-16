@@ -1,6 +1,3 @@
-'''
-    Simple socket server using threads
-'''
 #import lambda-master as lm
 import time
 import lambdaMasterEMU as lm
@@ -49,7 +46,8 @@ def main():
             t=Thread(target = clientThread,args = (conn,))
             t.setDaemon(True)
             t.start()
-	except Exception as e:
+	
+		except Exception as e:
             print "Exception in client connection thread, "+e
             sys.exit(0)
         
@@ -65,17 +63,15 @@ def clientThread(conn):
 
         if initCharacter == "s":
             while lm.sensorDataReady is 0:
-                continue
-            
+                continue    
             data = '@'+str(lm.sensorData)+'@'            
             conn.send(data)
             conn.close()
-            
+
             return
 
         elif initCharacter == "f":
             frequency = float(conn.recv(38))
-            prevData = ""
             while 1:
                 while lm.sensorDataReady is 0:
                     continue
@@ -91,9 +87,7 @@ def clientThread(conn):
                 if lm.sensorDataReady == 1:
                     data = '@'+str(lm.sensorData)+'@'
                     print data
-                    #if prevData != data:
                     conn.send(data)
-                    #prevData = data
         else:
             print "No match"
 
