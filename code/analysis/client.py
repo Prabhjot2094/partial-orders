@@ -14,14 +14,14 @@ def main(*params):
 	begin_time = time.time()
 
 	try:
-		t=Thread(target = printThread)
+		t=Thread(target = printThread, args = (params[-1],))
 		t.setDaemon(True)
 		t.start()
 	
-                if len(params)==2:
-		    t=Thread(target = client,args = (params[1],params[0])) # OR {1,freq}
-                else:
-		    t=Thread(target = client,args = (params[0])) # OR {1,freq}
+		if len(params)==3:
+		    t=Thread(target = client,args = (params[1],params[0],)) # OR {1,freq}
+		else:
+		    t=Thread(target = client,args = (params[0],)) # OR {1,freq}
 		t.setDaemon(True)
 		t.start()
 	except Exception as e:
@@ -29,8 +29,10 @@ def main(*params):
 		raise Exception('Client thread encountered an error')
 
 	print "Time Taken = ",time.time()-begin_time
+	while 1:
+		continue
 
-def printThread():
+def printThread(formattedData):
     main_row = []
     leftover_data = ''
 
@@ -59,7 +61,7 @@ def printThread():
 
 def client(*args):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-        host = "0.0.0.0"
+        host = "192.168.1.25"
         port = 50001
         
         try :
@@ -73,7 +75,7 @@ def client(*args):
                     s.send(args[1])
 
                 while True:
-                        tm = s.recv(64)
+                        tm = s.recv(1024)
 
                         if not tm:
                              break
@@ -90,4 +92,5 @@ def client(*args):
                 return
 
 #if __name__=="__main__":
-#       #main('c')
+#q = Queue()
+#main('c',q)
