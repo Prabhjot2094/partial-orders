@@ -10,7 +10,7 @@ import sys
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
 ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
 SENSOR_TILE_DATA_COUNT      = 24
-DATA_READ_INTERVAL          = 10    # milliseconds
+DATA_READ_INTERVAL          = 100    # milliseconds
 AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
 
 arduinoBus = smbus.SMBus(1)
@@ -19,38 +19,47 @@ sensorTile = serial.Serial('/dev/ttyACM0', 9600)
 sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
 dataReadFlag = False
+initialtime = 0
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
-
 
 def main():
     try:
         global dataReadFlag
         global sensorDataReady
         global sensorData
+        global initialtime
+
+        initialtime = time.time()
 
         try:
             dataReadThread = threading.Thread(target=readSensorData)
             dataReadThread.setDaemon(True)
             dataReadThread.start()
         except Exception as e:
-            print "Exception in dataReadThread " + e
+            print "Exception in dataReadThread " + str(e)
             shutdown()
 
         dataReadFlag = True
 
         while True:
-            if sensorDataReady:
-                while sensorDataReady:
-                    pass
-                print sensorData
+            pass
 
     except KeyboardInterrupt:
-        writeMotorSpeeds(0, 0)
-        sys.exit(0)
+        shutdown()
 
+def getFileName():
+    maxInt = -1
+    for f in os.listdir('../../data/live-data/'):
+        num = int(f.split('.')[0].split('_')[1])
+        if num > maxInt:
+            maxInt = num
+    return '../../data/live-data/record_' + str(maxInt + 1) + '.csv'
+
+def getTimestamp():
+    return time.time() - initialtime
 
 def arduinoDataHandler():
     global sensorData
@@ -69,15 +78,6 @@ def arduinoDataHandler():
     except IOError:
         arduinoDataHandler()
 
-
-def getFileName():
-    maxInt = 1
-    for f in os.listdir('../../data/records/live-data/'):
-        num = f.split('.')[-2][-1]
-        if num>maxInt:
-            maxInt = num
-    return str(maxInt)
-
 def sensorTileDataHandler():
     global sensorData
 
@@ -89,16 +89,14 @@ def sensorTileDataHandler():
             if len(rawData) == 24:
                 for sensorIndex in range(0, SENSOR_TILE_DATA_COUNT):
                     sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
-
                 break
 
             else:
                 continue
 
     except Exception as e:
-        print "Exception in sensorTileDataHandler " + e
+        print "Exception in sensorTileDataHandler " + str(e)
         shutdown()
-
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
@@ -106,22 +104,22 @@ def writeMotorSpeeds(speedLeft, speedRight):
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
 
-
 def readSensorData():
     global sensorData
     global sensorDataReady
     global dataReadFlag
 
-    nextDataReadTime = time.time()
+    nextDataReadTime = getTimestamp()
 
-    with open('../../data/records/live-data/record'+getFileName()+'.csv', 'wb') as csvfile:
+    with open(getFileName(), 'wb') as rawfile:
+        csvfile = csv.writer(rawfile, delimiter=',') 
         while True:
             if dataReadFlag:
-                currentTime = time.time()
+                currentTime = getTimestamp()
                 if currentTime >= nextDataReadTime:
                     sensorDataReady = False
 
-                    nextDataReadTime += DATA_READ_INTERVAL/100.0
+                    nextDataReadTime += DATA_READ_INTERVAL/1000.0
                     
                     sensorData[0] = currentTime
                     arduinoDataHandler()
@@ -132,7 +130,6 @@ def readSensorData():
 
             else:
                 time.sleep(0.01)
-
 
 def drive(command, speed=127):
     global dataReadFlag
@@ -163,7 +160,6 @@ def drive(command, speed=127):
 
     if command == 'autopilot-sonar-yaw':
         pass
-
 
 def shutdown():
     writeMotorSpeeds(0, 0)
