@@ -1,6 +1,6 @@
 import sys
 from threading import Thread
-from multiprocessing import Queue
+from multiprocessing import Process,Queue
 import dataprocessing as data
 
 import random
@@ -11,7 +11,8 @@ import pyqtgraph as pg
 from pyqtgraph.ptime import time
 
 class line_graph_3d:
-    def __init__(self):
+    def __init__(self,processedData):
+    	self.processedData = processedData
         app = QtGui.QApplication([])
 
 
@@ -61,10 +62,9 @@ class line_graph_3d:
         QtGui.QApplication.instance().exec_()
         
     def update(self):
-		if int(data.processedData.qsize()) is 0:
-			print "Processed data Queue empty"
+		if int(self.processedData.qsize()) is 0:
 			return
-		dataRow = data.processedData.get()
+		dataRow = self.processedData.get()
 
 		self.datax.append(dataRow)
 
@@ -93,7 +93,8 @@ class line_graph_3d:
 		#app.processEvents()  ## force complete redraw for every plot
 
 class line_graph:
-    def __init__(self):
+    def __init__(self,processedData):
+    	self.processedData = processedData
         self.app = QtGui.QApplication([])
 
         self.p = pg.plot()
@@ -123,11 +124,10 @@ class line_graph:
 
     def update(self):
         #global curve, data, ptr, p, lastTime, fps
-        if int(data.processedData.qsize()) == 0:
+        if int(self.processedData.qsize()) == 0:
         	return
-        dataRow = data.processedData.get()
+        dataRow = self.processedData.get()
 
-        print dataRow
         self.datax.append(dataRow[0])
         self.datay.append(dataRow[1])
         self.curve.setData(self.datax,self.datay,symbol='o')
@@ -146,7 +146,8 @@ class line_graph:
         #app.processEvents()  ## force complete redraw for every plot
 
 class scatter_plot_3d:
-    def __init__(self):
+    def __init__(self,processedData):
+    	self.processedData = processedData
         app = QtGui.QApplication([])
 
 
@@ -199,10 +200,9 @@ class scatter_plot_3d:
         QtGui.QApplication.instance().exec_()
         
     def update(self):
-            if int(data.processedData.qsize()) is 0:
-                    print "Processed data Queue empty"
+            if int(self.processedData.qsize()) is 0:
                     return
-            dataRow = data.processedData.get()
+            dataRow = self.processedData.get()
 
             self.datax.append(dataRow)
 
@@ -231,7 +231,8 @@ class scatter_plot_3d:
 
 
 class scatter_plot:
-        def __init__(self):
+        def __init__(self,processedData):
+            self.processedData = processedData
             app = QtGui.QApplication([])
             mw = QtGui.QMainWindow()
 
@@ -255,10 +256,9 @@ class scatter_plot:
         def update(self):
                 #global curve, data, ptr, p, lastTime, fps
                 #p.clear()
-                if int(data.processedData.qsize()) is 0:
-                        print "Processed data Queue empty"
+                if int(self.processedData.qsize()) is 0:
                         return
-                dataRow = data.processedData.get()
+                dataRow = self.processedData.get()
 
                 self.datax.append(dataRow[0])
                 self.datay.append(dataRow[1])
@@ -272,37 +272,41 @@ class scatter_plot:
 
 ## Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
-	try:
-		try:
-			graphToPlot = sys.argv[1]
-			dataRequestParams = sys.argv[2:]
-		except:
-			graphToPlot = "scatter"
-			dataRequestParams = ['c']
+    processedData = Queue()
+    try:
+        try:
+                graphToPlot = sys.argv[1]
+                dataRequestParams = sys.argv[2:]
+        except:
+                graphToPlot = "scatter_3d"
+                dataRequestParams = ['c']
 
-		if dataRequestParams[0]=='f':
-			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0],dataRequestParams[1]))
-		elif dataRequestParams[0] in ['c','s']:
-			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0]))
-		else:
-			print "Incorrect Parameters for client, Requesting continuous data"
-			dataProcessingThread = Thread(name = "Data Processing" ,target=data.processData, args = (dataRequestParams[0]))
+        if dataRequestParams[0]=='f':
+                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+                        args = (dataRequestParams[0],dataRequestParams[1], processedData,))
+        elif dataRequestParams[0] in ['c','s']:
+                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+                        args = (dataRequestParams[0],processedData,))
+        else:
+                print "Incorrect Parameters for client, Requesting continuous data"
+                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+                        args = (dataRequestParams[0],processedData,))
 
-		dataProcessingThread.setDaemon(True)
-		dataProcessingThread.start()
-	
-		if graphToPlot == "line":
-			line_graph()
-		elif graphToPlot == "line_3d":
-			line_graph_3d()
-		elif graphToPlot == "scatter":
-			scatter_plot()
-		elif graphToPlot == "scatter_3d":
-			scatter_plot_3d()
-		else:
-			print "incorrect graph name, rendering scatter plot"
-			scatter_plot()
+        dataProcessingThread.daemon = True
+        dataProcessingThread.start()
 
-	except Exception as e:
-		print "Exception caught in graph module, "+str(e)
-		sys.exit(0)
+        if graphToPlot == "line":
+                line_graph(processedData)
+        elif graphToPlot == "line_3d":
+                line_graph_3d(processedData)
+        elif graphToPlot == "scatter":
+                scatter_plot(processedData)
+        elif graphToPlot == "scatter_3d":
+                scatter_plot_3d(processedData)
+        else:
+                print "incorrect graph name, rendering scatter plot"
+                scatter_plot(processedData)
+
+    except Exception as e:
+        print "Exception caught in graph module, "+str(e)
+        sys.exit(0)
