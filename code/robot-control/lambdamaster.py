@@ -56,6 +56,11 @@ def main():
     except KeyboardInterrupt:
         shutdown()
 
+    except Exception:
+        print "Exception in main " + str(Exception)
+        shutdown()
+        raise
+
 def getFileName():
     number = 0
     while True:
@@ -104,14 +109,12 @@ def sensorTileDataHandler():
             else:
                 continue
 
-    except Exception as e:
-        print "Exception in sensorTileDataHandler " + str(e)
+    except Exception:
+        print "Exception in sensorTileDataHandler " + str(Exception)
         shutdown()
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
-        while not sensorDataReady:
-            pass
         arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
@@ -174,6 +177,7 @@ def drive(command, speed=127):
         pass
 
 def shutdown():
+    print "Shutting Down"
     writeMotorSpeeds(0, 0)
     sys.exit(0)
 
