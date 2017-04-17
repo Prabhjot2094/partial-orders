@@ -22,6 +22,7 @@ except:
 sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
 dataReadFlag = False
+dataLogFlag = False
 initialtime = 0
 
 def highByte (number) : return number >> 8
@@ -45,13 +46,7 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-        dataReadFlag = True
-
-        while True:
-            drive('forward', 255)
-            time.sleep(1)
-            drive('stop')
-            time.sleep(1)
+        dataReadFlag = False
 
     except KeyboardInterrupt:
         shutdown()
@@ -123,6 +118,7 @@ def readSensorData():
     global sensorData
     global sensorDataReady
     global dataReadFlag
+    global dataLogFlag
 
     nextDataReadTime = getTimestamp()
 
@@ -141,15 +137,19 @@ def readSensorData():
                     sensorTileDataHandler()
 
                     sensorDataReady = True
-                    csvfile.writerow(sensorData)
+
+                    if dataLogFlag:
+                        csvfile.writerow(sensorData)
 
             else:
                 time.sleep(0.01)
 
-def drive(command, speed=127):
+def drive(command, speed=127, dataLog=True):
     global dataReadFlag
+    global dataLogFlag
     
     dataReadFlag = True
+    dataLogFlag = dataLog
 
     if command == 'forward':
         writeMotorSpeeds(speed, speed)
