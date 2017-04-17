@@ -1,11 +1,14 @@
+/* Debugging -----------------------------------------------------------------*/
+//#define SERIAL_DEBUGGING
+
 /* i2c settings --------------------------------------------------------------*/
 #define SLAVE_ADDRESS 0x04
 
 /* Sensors -------------------------------------------------------------------*/
 // ultrasonic
 #define SONAR_NUM       5       // number of sensors
-#define MAX_DISTANCE    200     // maximum distance (in cm) to ping
-#define PING_INTERVAL   33      // milliseconds between sensor pings
+#define MAX_DISTANCE    300     // maximum distance (in cm) to ping
+#define PING_INTERVAL   35      // milliseconds between sensor pings
 
 #define SONAR_FAR_LEFT_TRIG     11
 #define SONAR_FAR_LEFT_ECHO     6
