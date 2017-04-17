@@ -61,7 +61,7 @@ def printThread(formattedData):
 
 def client(*args):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-        host = "192.168.1.25"
+        host = "0.0.0.0"
         port = 50001
         
         try :

@@ -1,6 +1,6 @@
-#import lambda-master as lm
+import lambdamaster as lm
 import time
-import lambdaMasterEMU as lm
+#import lambdaMasterEMU as lm
 import socket
 import sys
 from threading import Thread
@@ -28,9 +28,10 @@ def main():
     print 'Socket now listening'
      
     try:
-        dataThread = Thread(target=lm.getData)
-        dataThread.setDaemon(True)
-        dataThread.start()
+    	lm.drive('forward',127,True)
+        #dataThread = Thread(target=lm.getData)
+        #dataThread.setDaemon(True)
+        #dataThread.start()
     except Exception as e:
         print "Exception in Sensor Data thread, "+e
         sys.exit(0)
@@ -47,7 +48,7 @@ def main():
             t.setDaemon(True)
             t.start()
 	
-		except Exception as e:
+        except Exception as e:
             print "Exception in client connection thread, "+e
             sys.exit(0)
         
@@ -62,32 +63,32 @@ def clientThread(conn):
         print str(initCharacter)
 
         if initCharacter == "s":
-            while lm.sensorDataReady is 0:
-                continue    
-            data = '@'+str(lm.sensorData)+'@'            
-            conn.send(data)
-            conn.close()
-
+            if lm.sensorDataReady:
+                data = '@'+str(lm.sensorData)+'@'            
+                conn.send(data)
+                conn.close()
             return
 
         elif initCharacter == "f":
             frequency = float(conn.recv(38))
             while 1:
-                while lm.sensorDataReady is 0:
-                    continue
-                data = '@'+str(lm.sensorData)+'@'
-                if prevData != data:
+                if lm.sensorDataReady:
+                    data = '@'+str(lm.sensorData)+'@'
                     conn.send(data);
-                prevData = data
-                time.sleep(frequency)
+                    time.sleep(frequency)
+                    while lm.sensorDataReady:
+                        continue
 
         elif str(initCharacter)=="c":
             prevData = ""
             while 1:
-                if lm.sensorDataReady == 1:
+                if lm.sensorDataReady:
                     data = '@'+str(lm.sensorData)+'@'
                     print data
                     conn.send(data)
+                    while lm.sensorDataReady:
+                        continue
+
         else:
             print "No match"
 
