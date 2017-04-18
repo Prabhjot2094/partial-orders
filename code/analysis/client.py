@@ -7,7 +7,7 @@ from threading import Thread
 import time
 import shutil   
 
-_HOST = "0.0.0.0"
+_HOST = "192.168.43.131"
 rawData = Queue()
 formattedData = Queue()
 

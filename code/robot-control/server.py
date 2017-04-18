@@ -82,6 +82,7 @@ def clientThread(conn):
         elif str(initCharacter)=="c":
             prevData = ""
             while 1:
+            	print lm.sensorDataReady
                 if lm.sensorDataReady:
                     data = '@'+str(lm.sensorData)+'@'
                     print data
@@ -96,6 +97,9 @@ def clientThread(conn):
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]
         return
+	except KeyboardInterrupt:
+		lm.halt()
+		
 
 if __name__=="__main__":
     main()

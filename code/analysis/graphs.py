@@ -279,7 +279,7 @@ if __name__ == '__main__':
                 dataRequestParams = sys.argv[2:]#(c), (s), (f,frequency)
         except:
         		#Default graph and Request parameters
-                graphToPlot = "scatter_3d"
+                graphToPlot = "scatter"
                 dataRequestParams = ['c']
 
         if dataRequestParams[0]=='f':
