@@ -11,7 +11,7 @@ ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
 ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
 SENSOR_TILE_DATA_COUNT      = 24
 DATA_READ_INTERVAL          = 100    # milliseconds
-AUTOPILOT_COMPUTE_INTERVAL  = 200    # milliseconds
+AUTOPILOT_UPDATE_INTERVAL  = 200    # milliseconds
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -216,6 +216,8 @@ def autopilot(type='sonar', speed=255):
         if autopilotFlag:
             currentTime = getTimestamp()
             if currentTime >= nextAutopilotUpdateTime:
+                nextAutopilotUpdateTime += AUTOPILOT_UPDATE_INTERVAL/1000.0
+
                 while not sensorDataReady:
                     pass
 
