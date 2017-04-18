@@ -7,6 +7,7 @@ from threading import Thread
 import time
 import shutil   
 
+_HOST = "0.0.0.0"
 rawData = Queue()
 formattedData = Queue()
 
@@ -61,7 +62,7 @@ def printThread(formattedData):
 
 def client(*args):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-        host = "0.0.0.0"
+        host = _HOST
         port = 50001
         
         try :
