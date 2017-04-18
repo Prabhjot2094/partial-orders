@@ -2,12 +2,14 @@ import time
 import random
 
 sensorData = [0] * 10
-sensorDataReady = 1
+sensorDataReady = False
 
 def getData():
         global sensorDataReady
 	while 1:
-	        sensorDataReady = 1
+	        sensorDataReady = False
 		for i in range(10):
 			sensorData[i] = random.randint(1,100)
-		sensorDataReady = 1
+		time.sleep(0.006)
+		sensorDataReady = True
+		time.sleep(0.004)

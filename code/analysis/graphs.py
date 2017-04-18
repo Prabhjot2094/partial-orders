@@ -275,10 +275,11 @@ if __name__ == '__main__':
     processedData = Queue()
     try:
         try:
-                graphToPlot = sys.argv[1]
-                dataRequestParams = sys.argv[2:]
+                graphToPlot = sys.argv[1]		#line, scatter,scatter_3d,line_3d aas first parameter
+                dataRequestParams = sys.argv[2:]#(c), (s), (f,frequency)
         except:
-                graphToPlot = "scatter_3d"
+        		#Default graph and Request parameters
+                graphToPlot = "scatter"
                 dataRequestParams = ['c']
 
         if dataRequestParams[0]=='f':

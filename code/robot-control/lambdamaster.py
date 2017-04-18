@@ -49,11 +49,15 @@ def main():
 
         dataReadFlag = False
 
+        drive('autopilot-sonar', 255, False)
+        while True:
+            time.sleep(0.01)
+
     except KeyboardInterrupt:
         shutdown()
 
-    except Exception:
-        print "Exception in main " + str(Exception)
+    except Exception as e:
+        print "Exception in main " + str(e)
         shutdown()
         raise
 
@@ -114,6 +118,9 @@ def writeMotorSpeeds(speedLeft, speedRight):
         arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
+    except Exception as e:
+        print "Exception " + str(e)
+        shutdown()
 
 def readSensorData():
     global sensorData
@@ -147,10 +154,11 @@ def readSensorData():
 
 def checkObstacle():
     global sensorData
-
+    
+    obstacleFlag = False
     obstacleSum = 0
     for sensorIndex in range(1, 6):
-        if sensorData[sensorIndex] > 0 && sensorData[sensorIndex] < 10:
+        if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < 10:
             obstacleSum += (sensorIndex - 3)
             obstacleFlag = True
 
@@ -159,7 +167,16 @@ def checkObstacle():
     else:
         return 100
 
-def drive(command, speed=255, dataLog=True):
+def getSensorData():
+    global sensorDataReady
+    global sensorData
+
+    while not sensorDataReady:
+        pass
+
+    return sensorData
+
+def drive(command, speed=127, dataLog=True):
     global dataReadFlag
     global dataLogFlag
     global autopilotFlag
@@ -192,9 +209,12 @@ def drive(command, speed=255, dataLog=True):
             autopilotThread.join()
         
         except NameError:
+            autopilotFlag = True
+
             autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
             autopilotThread.setDaemon(True)
             autopilotThread.start()
+
 
     if command == 'autopilot-sonar-yaw':
         try:
@@ -220,6 +240,8 @@ def autopilot(type='sonar', speed=255):
 
                 while not sensorDataReady:
                     pass
+
+                print "Here"
 
                 if type == 'sonar':
                     obstacle = checkObstacle()
