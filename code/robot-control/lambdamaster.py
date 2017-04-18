@@ -140,9 +140,17 @@ def readSensorData():
 
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
-
             else:
                 time.sleep(0.01)
+
+def getSensorData():
+    global sensorDataReady
+    global sensorData
+
+    while not sensorDataReady:
+        pass
+
+    return sensorData
 
 def drive(command, speed=127, dataLog=True):
     global dataReadFlag

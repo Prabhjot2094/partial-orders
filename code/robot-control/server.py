@@ -28,7 +28,7 @@ def main():
         print 'Socket now listening'
          
         try:
-            lm.drive('forward',127,True)
+            lm.drive('forward',255,True)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
@@ -53,7 +53,7 @@ def main():
                 sys.exit(0)
     
     except KeyboardInterrupt:
-        lm.halt()
+        lm.drive('halt')
         
 
 def clientThread(conn):
@@ -66,32 +66,23 @@ def clientThread(conn):
         print str(initCharacter)
 
         if initCharacter == "s":
-            if lm.sensorDataReady:
-                data = '@'+str(lm.sensorData)+'@'            
-                conn.send(data)
-                conn.close()
+            data = '@'+str(lm.getSensorData())+'@'
+            conn.send(data)
+            conn.close()
             return
 
         elif initCharacter == "f":
             frequency = float(conn.recv(38))
             while 1:
-                if lm.sensorDataReady:
-                    data = '@'+str(lm.sensorData)+'@'
-                    conn.send(data);
-                    time.sleep(frequency)
-                    while lm.sensorDataReady:
-                        continue
+                data = '@'+str(lm.getSensorData())+'@'
+                conn.send(data);
+                time.sleep(frequency)
 
         elif str(initCharacter)=="c":
             prevData = ""
             while 1:
-            	print lm.sensorDataReady
-                if lm.sensorDataReady:
-                    data = '@'+str(lm.sensorData)+'@'
-                    print data
-                    conn.send(data)
-                    while lm.sensorDataReady:
-                        continue
+                data = '@'+str(lm.getSensorData())+'@'
+                conn.send(data)
 
         else:
             print "No match"
@@ -104,5 +95,3 @@ def clientThread(conn):
 
 if __name__=="__main__":
     main()
-
-
