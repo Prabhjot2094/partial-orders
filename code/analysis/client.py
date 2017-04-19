@@ -12,7 +12,6 @@ _HOST = "192.168.43.131"
 _HOST = "0.0.0.0"
 
 rawData = Queue()
-formattedData = Queue()
 
 def main(*params):
 	
@@ -21,6 +20,7 @@ def main(*params):
         print threading.activeCount()
 	try:
 	        # Request Data at a particular frequency
+	        print params
 		if len(params)==4:
                     formatDataThread = Thread(target = printThread, args = (params[2],))
 		    clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
@@ -61,7 +61,6 @@ def printThread(formattedData):
                     continue
                 l = ast.literal_eval(r)
                 formattedData.put(l)
-            
             leftover_data = ''
 
             if row[-1] != '@':

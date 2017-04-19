@@ -1,6 +1,6 @@
-import lambdamaster as lm
+#import lambdamaster as lm
 import time
-#import lambdaMasterEMU as lm
+import lambdaMasterEMU as lm
 import socket
 import sys
 from threading import Thread
@@ -30,10 +30,10 @@ def main():
         print 'Socket now listening'
          
         try:
-            lm.drive('forward',255,True)
-            #dataThread = Thread(target=lm.getData)
-            #dataThread.setDaemon(True)
-            #dataThread.start()
+            #lm.drive('forward',255,True)
+            dataThread = Thread(target=lm.getData)
+            dataThread.setDaemon(True)
+            dataThread.start()
         except Exception as e:
             print "Exception in Sensor Data thread, ",e
             sys.exit(0)

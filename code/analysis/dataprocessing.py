@@ -1,3 +1,4 @@
+import math
 import time
 from threading import Thread
 from multiprocessing import Process,Queue
@@ -28,6 +29,7 @@ def processData(*args):
 	coordinates(processedData)
 
 def coordinates(*args):
+	global formattedData
 	processedData = args[0]
 	yawColumn = 6
 	usColumn = 4
@@ -35,12 +37,12 @@ def coordinates(*args):
 	while True:
 		if int(formattedData.qsize()) == 0:
 			continue
-			firstRow = formattedData.get()
-			break
+		firstRow = formattedData.get()
+		break
 	
 	prevX = prevY = 0
-	previousYaw = float(firstDataRow[yawColumn])
-	previousDistance = float(firstDataRow[usColumn])
+	previousYaw = float(firstRow[yawColumn])
+	previousDistance = float(firstRow[usColumn])
 	
 	while True:
 		if int(formattedData.qsize()) == 0:
@@ -61,6 +63,7 @@ def coordinates(*args):
 		x = math.cos(math.radians(currentYaw))*distanceDiff + prevX
 		y = math.sin(math.radians(currentYaw))*distanceDiff + prevY
 
+		print x,y
 		processedData.put([x,y])
 
 

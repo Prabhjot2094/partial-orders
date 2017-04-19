@@ -2,7 +2,6 @@ import sys
 from threading import Thread
 from multiprocessing import Process,Queue
 import dataprocessing as data
-
 import random
 import pyqtgraph.opengl as gl
 from pyqtgraph.Qt import QtGui, QtCore
@@ -280,7 +279,7 @@ if __name__ == '__main__':
                 autopilot = sys.argv[4]
         except:
         		#Default graph and Request parameters
-        		autopilot = 1
+                autopilot = 1
                 graphToPlot = "scatter"
                 dataRequestParams = ['c']
 
