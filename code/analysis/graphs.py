@@ -246,6 +246,9 @@ class scatter_plot:
             self.datax = []
             self.datay = []
             
+            self.curve = pg.ScatterPlotItem(x=self.datax, y=self.datay,pen='r',symbol='o')
+            self.p.addItem(self.curve)
+            
             timer = QtCore.QTimer()
             timer.timeout.connect(self.update)
             timer.start(0)
@@ -259,13 +262,9 @@ class scatter_plot:
                         return
                 dataRow = self.processedData.get()
 
-                self.datax.append(dataRow[0])
-                self.datay.append(dataRow[1])
-                curve = pg.ScatterPlotItem(x=self.datax, y=self.datay,pen='r',symbol='o')
+                self.curve.addPoints([dataRow[0]],[dataRow[1]])
 
-                self.p.addItem(curve)
-                self.ptr += 1
-                self.p.repaint()
+                #self.p.repaint()
                 #app.processEvents()  ## force complete redraw for every plot
 
 
@@ -281,7 +280,7 @@ if __name__ == '__main__':
         		#Default graph and Request parameters
                 autopilot = 1
                 graphToPlot = "scatter"
-                dataRequestParams = ['c']
+                dataRequestParams = ['f','0.01']
 
         if dataRequestParams[0]=='f':
                 dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \

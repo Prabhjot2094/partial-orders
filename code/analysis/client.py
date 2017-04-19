@@ -9,7 +9,7 @@ import time
 import shutil   
 
 _HOST = "192.168.43.131"
-_HOST = "0.0.0.0"
+#_HOST = "0.0.0.0"
 
 rawData = Queue()
 
