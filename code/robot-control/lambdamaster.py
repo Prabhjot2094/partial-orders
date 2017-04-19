@@ -11,9 +11,9 @@ import PID
 ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
 ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
 SENSOR_TILE_DATA_COUNT      = 24
-DATA_READ_INTERVAL          = 100    # milliseconds
-AUTOPILOT_UPDATE_INTERVAL   = 100    # milliseconds
-YAW_P                       = 0.5
+DATA_READ_INTERVAL          = 50    # milliseconds
+AUTOPILOT_UPDATE_INTERVAL   = 50    # milliseconds
+YAW_P                       = 1.5
 YAW_I                       = 0.0
 YAW_D                       = 0.0
 YAW_INDEX                   = 23
@@ -55,7 +55,7 @@ def main():
 
         dataReadFlag = False
 
-        drive('autopilot-sonar', 255, False)
+        drive('autopilot-sonar-yaw', 255, False)
         while True:
             time.sleep(0.01)
 
@@ -243,7 +243,7 @@ def autopilot(type='sonar', speed=255):
 
     if type == 'sonar-yaw':
         robotPID = PID.PID(YAW_P, YAW_I, YAW_D)
-        robotPID.setPoint=0.0
+        robotPID.setPoint=-90.0
         robotPID.setSampleTime(AUTOPILOT_UPDATE_INTERVAL/1000.0)
 
     while True:
@@ -280,12 +280,12 @@ def autopilot(type='sonar', speed=255):
 
                     robotPID.update(feedback)
 
-                    pidOutput = robotPID.output
+                    pidOutput = int(robotPID.output)
 
                     if pidOutput < 0:
-                        writeMotorSpeeds(MAX_SPEED, MAX_SPEED + pidOutput)
+                        writeMotorSpeeds(MAX_SPEED + pidOutput, MAX_SPEED)
                     else:
-                        writeMotorSpeeds(MAX_SPEED - pidOutput, MAX_SPEED)
+                        writeMotorSpeeds(MAX_SPEED, MAX_SPEED - pidOutput)
 
         else:
             return
