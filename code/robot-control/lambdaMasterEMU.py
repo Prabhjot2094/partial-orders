@@ -4,6 +4,11 @@ import random
 sensorData = [0] * 10
 sensorDataReady = False
 
+def getSensorData():
+	while not sensorDataReady:
+		pass
+	return sensorData
+
 def getData():
         global sensorDataReady
 	while 1:
