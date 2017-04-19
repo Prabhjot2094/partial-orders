@@ -11,7 +11,7 @@ ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
 ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
 SENSOR_TILE_DATA_COUNT      = 24
 DATA_READ_INTERVAL          = 100    # milliseconds
-AUTOPILOT_COMPUTE_INTERVAL  = 50    # milliseconds
+AUTOPILOT_UPDATE_INTERVAL  = 200    # milliseconds
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -23,6 +23,7 @@ sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
 sensorDataReady = False
 dataReadFlag = False
 dataLogFlag = False
+autopilotFlag = False
 initialtime = 0
 
 def highByte (number) : return number >> 8
@@ -48,11 +49,15 @@ def main():
 
         dataReadFlag = False
 
+        drive('autopilot-sonar', 255, False)
+        while True:
+            time.sleep(0.01)
+
     except KeyboardInterrupt:
         shutdown()
 
-    except Exception:
-        print "Exception in main " + str(Exception)
+    except Exception as e:
+        print "Exception in main " + str(e)
         shutdown()
         raise
 
@@ -113,6 +118,9 @@ def writeMotorSpeeds(speedLeft, speedRight):
         arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
+    except Exception as e:
+        print "Exception " + str(e)
+        shutdown()
 
 def readSensorData():
     global sensorData
@@ -140,8 +148,24 @@ def readSensorData():
 
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
+
             else:
                 time.sleep(0.01)
+
+def checkObstacle():
+    global sensorData
+    
+    obstacleFlag = False
+    obstacleSum = 0
+    for sensorIndex in range(1, 6):
+        if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < 10:
+            obstacleSum += (sensorIndex - 3)
+            obstacleFlag = True
+
+    if obstacleFlag:
+        return obstacleSum
+    else:
+        return 100
 
 def getSensorData():
     global sensorDataReady
@@ -155,9 +179,11 @@ def getSensorData():
 def drive(command, speed=127, dataLog=True):
     global dataReadFlag
     global dataLogFlag
+    global autopilotFlag
     
     dataReadFlag = True
     dataLogFlag = dataLog
+    autopilotFlag = False
 
     if command == 'forward':
         writeMotorSpeeds(speed, speed)
@@ -179,9 +205,61 @@ def drive(command, speed=127, dataLog=True):
         dataReadFlag = False
 
     if command == 'autopilot-sonar':
-        pass
+        try:
+            autopilotThread.join()
+        
+        except NameError:
+            autopilotFlag = True
+
+            autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
+            autopilotThread.setDaemon(True)
+            autopilotThread.start()
+
 
     if command == 'autopilot-sonar-yaw':
+        try:
+            autopilotThread.join()
+        
+        except NameError:
+            autopilotThread = threading.Thread(target=autopilot, args=('sonar-yaw', speed))
+            autopilotThread.setDaemon(True)
+            autopilotThread.start()
+
+def autopilot(type='sonar', speed=255):
+    global sensorData
+    global sensorDataReady
+    global autopilotFlag
+
+    nextAutopilotUpdateTime = getTimestamp()
+
+    while True:
+        if autopilotFlag:
+            currentTime = getTimestamp()
+            if currentTime >= nextAutopilotUpdateTime:
+                nextAutopilotUpdateTime += AUTOPILOT_UPDATE_INTERVAL/1000.0
+
+                while not sensorDataReady:
+                    pass
+
+                print "Here"
+
+                if type == 'sonar':
+                    obstacle = checkObstacle()
+
+                    if obstacle == 100:     # no obstacle
+                        writeMotorSpeeds(speed, speed)
+                    elif obstacle < 0:      # obstacle towards left
+                        writeMotorSpeeds(speed, -speed)
+                        time.sleep(.500)
+                    elif obstacle >= 0:     # obstacle towards right or in front
+                        writeMotorSpeeds(-speed, speed)
+                        time.sleep(.500)
+
+        else:
+            return
+
+
+    if type == 'sonar-yaw':
         pass
 
 def shutdown():
