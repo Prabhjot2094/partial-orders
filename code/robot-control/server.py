@@ -8,7 +8,9 @@ import threading
 import os
 
 
+threadActiveCount = 0
 def main():
+    global threadActiveCount
     try:
         HOST = '0.0.0.0'
         PORT = 50001
@@ -33,7 +35,7 @@ def main():
             #dataThread.setDaemon(True)
             #dataThread.start()
         except Exception as e:
-            print "Exception in Sensor Data thread, "+e
+            print "Exception in Sensor Data thread, ",e
             sys.exit(0)
         
         i=0
@@ -47,9 +49,10 @@ def main():
                 t=Thread(target = clientThread,args = (conn,))
                 t.setDaemon(True)
                 t.start()
+                threadActiveCount += 1
             
             except Exception as e:
-                print "Exception in client connection thread, "+e
+                print "Exception in client connection thread, ",e
                 sys.exit(0)
     
     except KeyboardInterrupt:
@@ -61,6 +64,7 @@ def clientThread(conn):
     # f = SEND RECORDS CONTINUOUSLY AT FREQUENCY f
     # c = SEND RECORDS CONTINUOUSLY AFAP
 
+    global threadActiveCount
     try:
         initCharacter = conn.recv(1)
         print str(initCharacter)
@@ -79,15 +83,19 @@ def clientThread(conn):
                 time.sleep(frequency)
 
         elif str(initCharacter)=="c":
-            prevData = ""
             while 1:
                 data = '@'+str(lm.getSensorData())+'@'
                 conn.send(data)
+                print data
 
         else:
             print "No match"
 
     except socket.error as msg:
+        threadActiveCount -= 1
+        if threadActiveCount is 0:
+            lm.halt()
+
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]
         return

@@ -276,22 +276,24 @@ if __name__ == '__main__':
     try:
         try:
                 graphToPlot = sys.argv[1]		#line, scatter,scatter_3d,line_3d aas first parameter
-                dataRequestParams = sys.argv[2:]#(c), (s), (f,frequency)
+                dataRequestParams = sys.argv[2:4]        #(c), (s), (f,frequency)
+                autopilot = sys.argv[4]
         except:
         		#Default graph and Request parameters
+        		autopilot = 1
                 graphToPlot = "scatter"
                 dataRequestParams = ['c']
 
         if dataRequestParams[0]=='f':
                 dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],dataRequestParams[1], processedData,))
+                        args = (dataRequestParams[0],dataRequestParams[1], processedData, autopilot,))
         elif dataRequestParams[0] in ['c','s']:
                 dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],processedData,))
+                        args = (dataRequestParams[0],processedData,autopilot,))
         else:
                 print "Incorrect Parameters for client, Requesting continuous data"
                 dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],processedData,))
+                        args = (dataRequestParams[0],processedData,autopilot,))
 
         dataProcessingThread.daemon = True
         dataProcessingThread.start()

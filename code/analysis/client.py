@@ -4,29 +4,41 @@ import os
 import sys
 import socket
 from threading import Thread
+import threading
 import time
 import shutil   
 
 _HOST = "192.168.43.131"
+_HOST = "0.0.0.0"
+
 rawData = Queue()
 formattedData = Queue()
 
 def main(*params):
-	begin_time = time.time()
-
-	try:
-		t=Thread(target = printThread, args = (params[-1],))
-		t.setDaemon(True)
-		t.start()
 	
-		if len(params)==3:
-		    t=Thread(target = client,args = (params[1],params[0],)) # OR {1,freq}
+        begin_time = time.time()
+
+        print threading.activeCount()
+	try:
+	        # Request Data at a particular frequency
+		if len(params)==4:
+                    formatDataThread = Thread(target = printThread, args = (params[2],))
+		    clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
+		    print "Thread CReated"
+		#Request Single line Data or Continuous data
 		else:
-		    t=Thread(target = client,args = (params[0],)) # OR {1,freq}
-		t.setDaemon(True)
-		t.start()
+                    formatDataThread = Thread(target = printThread, args = (params[1],))
+		    clientThread = Thread(target = client,args = (params[0],params[2],))
+		    print "Thread CReated"
+		
+		formatDataThread.setDaemon(True)
+		formatDataThread.setDaemon(True)
+		
+		formatDataThread.start()
+		clientThread.start()
+	
 	except Exception as e:
-		print "Exception in client thread, "+str(e)
+		print e
 		raise Exception('Client thread encountered an error')
 
 	print "Time Taken = ",time.time()-begin_time
