@@ -243,7 +243,7 @@ def autopilot(type='sonar', speed=255):
 
     if type == 'sonar-yaw':
         robotPID = PID.PID(YAW_P, YAW_I, YAW_D)
-        robotPID.setPoint=-90.0
+        robotPID.setPoint = getSensorData()[YAW_INDEX]
         robotPID.setSampleTime(AUTOPILOT_UPDATE_INTERVAL/1000.0)
 
     while True:
