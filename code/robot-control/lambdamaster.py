@@ -19,6 +19,7 @@ YAW_D                       = 0.0
 YAW_INDEX                   = 23
 MAX_SPEED                   = 255
 TURN_ANGLE                  = 45
+OBSTACLE_DISTANCE           = 18
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -56,9 +57,9 @@ def main():
 
         dataReadFlag = False
 
-        drive('autopilot-sonar-yaw', 255, False)
-        while True:
-            time.sleep(0.01)
+        #drive('autopilot-sonar', 255, False)
+        #while True:
+        #    time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -124,7 +125,7 @@ def sensorTileDataHandler():
 
 def writeMotorSpeeds(speedLeft, speedRight):
     try:
-        arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(speedLeft), lowByte(speedLeft), highByte(speedRight), lowByte(speedRight)])
+        arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(int(speedLeft)), lowByte(int(speedLeft)), highByte(int(speedRight)), lowByte(int(speedRight))])
     except IOError:
         writeMotorSpeeds(speedLeft, speedRight)
     except Exception as e:
@@ -166,7 +167,7 @@ def checkObstacle(sensorData, obstacleArray=[]):
     obstacleSum = 0
     for sensorIndex in range(1, 6):
         obstacleArray.append(sensorData[sensorIndex]) 
-        if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < 10:
+        if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < OBSTACLE_DISTANCE:
             obstacleSum += (sensorIndex - 3)
             obstacleFlag = True
 
@@ -260,9 +261,11 @@ def autopilot(type='sonar', speed=255):
                     elif obstacle < 0:      # obstacle towards left
                         writeMotorSpeeds(speed, -speed)
                         time.sleep(.500)
+                        writeMotorSpeeds(0, 0)
                     elif obstacle >= 0:     # obstacle towards right or in front
                         writeMotorSpeeds(-speed, speed)
                         time.sleep(.500)
+                        writeMotorSpeeds(0, 0)
 
                 elif type == 'sonar-yaw':
                     obstacleArray = []
@@ -292,19 +295,19 @@ def autopilot(type='sonar', speed=255):
                         if robotPID.setPoint > 180:
                             robotPID.setPoint -= 360
 
-                        writeMotorSpeeds(speed, -speed)
-                        while (robotPID.setPoint - getSensorData()[YAW_INDEX])  > 5:
+                        writeMotorSpeeds(speed*0.5, -speed*0.5)
+                        while (robotPID.setPoint - getSensorData()[YAW_INDEX])  > 10:
                             pass
                         else:
                             writeMotorSpeeds(0, 0)
 
-                    elif obstacle >=0:
+                    else:
                         robotPID.setPoint -= TURN_ANGLE
                         if robotPID.setPoint < -180:
                             robotPID.setPoint += 360
 
-                        writeMotorSpeeds(-speed, speed)
-                        while getSensorData()[YAW_INDEX] - robotPID.setPoint > 5:
+                        writeMotorSpeeds(-speed*0.5, speed*0.5)
+                        while getSensorData()[YAW_INDEX] - robotPID.setPoint > 10:
                             pass
                         else:
                             writeMotorSpeeds(0, 0)

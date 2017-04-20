@@ -30,7 +30,8 @@ def main():
         print 'Socket now listening'
          
         try:
-            lm.drive('stop',255,False)
+            print "Driving"
+            lm.drive("autopilot-sonar",255,False)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
@@ -49,8 +50,8 @@ def main():
                 t=Thread(target = clientThread,args = (conn,))
                 t.setDaemon(True)
                 t.start()
-                threadActiveCount += 1
             
+                threadActiveCount += 1
             except Exception as e:
                 print "Exception in client connection thread, ",e
                 sys.exit(0)
@@ -94,7 +95,7 @@ def clientThread(conn):
     except socket.error as msg:
         threadActiveCount -= 1
         if threadActiveCount is 0:
-            lm.drive('halt')
+            lm.drive('stop')
 
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]
