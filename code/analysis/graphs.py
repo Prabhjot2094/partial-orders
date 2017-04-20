@@ -199,73 +199,73 @@ class scatter_plot_3d:
         QtGui.QApplication.instance().exec_()
         
     def update(self):
-            if int(self.processedData.qsize()) is 0:
-                    return
-            dataRow = self.processedData.get()
+		if int(self.processedData.qsize()) is 0:
+				return
+		dataRow = self.processedData.get()
 
-            self.datax.append(dataRow)
+		self.datax.append(dataRow)
 
-            x = self.dx[self.ptr%1000]
-            y = self.dx[self.ptr%1000]
+		x = self.dx[self.ptr%1000]
+		y = self.dx[self.ptr%1000]
 
-            pts = np.vstack(self.datax)
+		pts = np.vstack(self.datax)
 
-            self.prev = [x,y,x]
-            #pts = np.vstack([[1,1,1],[2,2,2],[3,3,3]])
+		self.prev = [x,y,x]
+		#pts = np.vstack([[1,1,1],[2,2,2],[3,3,3]])
 
-            self.plt.setData(pos = pts) 
-            self.ptr += 1
+		self.plt.setData(pos = pts) 
+		self.ptr += 1
 
-            now = time()
-            dt = now - self.lastTime
-            self.lastTime = now
-            if self.fps is None:
-                    self.fps = 1.0/dt
-            else:
-                    s = np.clip(dt*3., 0, 1)
-                    self.fps = self.fps * (1-s) + (1.0/dt) * s
-            #self.p.setTitle('%0.2f fps' % fps)
-            #p.show()
-            #app.processEvents()  ## force complete redraw for every plot
+		now = time()
+		dt = now - self.lastTime
+		self.lastTime = now
+		if self.fps is None:
+				self.fps = 1.0/dt
+		else:
+				s = np.clip(dt*3., 0, 1)
+				self.fps = self.fps * (1-s) + (1.0/dt) * s
+		#self.p.setTitle('%0.2f fps' % fps)
+		#p.show()
+		#app.processEvents()  ## force complete redraw for every plot
 
 
 class scatter_plot:
-        def __init__(self,processedData):
-            self.processedData = processedData
-            app = QtGui.QApplication([])
-            mw = QtGui.QMainWindow()
+	def __init__(self,processedData):
+		self.processedData = processedData
+		app = QtGui.QApplication([])
+		mw = QtGui.QMainWindow()
 
-            self.p = pg.plot()
-            #p.setRange(xRange=[-500, 500], yRange=[-500, 500])
+		self.p = pg.plot()
+		#p.setRange(xRange=[-500, 500], yRange=[-500, 500])
 
-            self.ptr = 0
+		self.ptr = 0
 
-            self.dx = [random.randint(1,1000) for i in range(1,1000)]
-            self.dy = [random.randint(1,1000) for i in range(1,1000)]
+		self.dx = [random.randint(1,1000) for i in range(1,1000)]
+		self.dy = [random.randint(1,1000) for i in range(1,1000)]
 
-            self.datax = []
-            self.datay = []
-            
-            self.curve = pg.ScatterPlotItem(x=self.datax, y=self.datay,pen='r',symbol='o')
-            self.p.addItem(self.curve)
-            
-            timer = QtCore.QTimer()
-            timer.timeout.connect(self.update)
-            timer.start(0)
+		self.datax = []
+		self.datay = []
+		
+		self.curve = pg.ScatterPlotItem(x=self.datax, y=self.datay,pen='r',symbol='o')
+		self.p.addItem(self.curve)
+		
+		timer = QtCore.QTimer()
+		timer.timeout.connect(self.update)
+		timer.start(0)
 
-            QtGui.QApplication.instance().exec_()
-        
-        def update(self):
-                #global curve, data, ptr, p, lastTime, fps
-                #p.clear()
-                if int(self.processedData.qsize()) is 0:
-                        return
-                dataRow = self.processedData.get()
+		QtGui.QApplication.instance().exec_()
+	
+	def update(self):
+		#global curve, data, ptr, p, lastTime, fps
+		#p.clear()
+		if int(self.processedData.qsize()) is 0:
+				return
+		dataRow = self.processedData.get()
 
-                self.curve.addPoints([dataRow[0]],[dataRow[1]])
+		self.curve.addPoints([dataRow[0]],[dataRow[1]])
 
-                #self.p.repaint()
-                #app.processEvents()  ## force complete redraw for every plot
+		#self.p.repaint()
+		#app.processEvents()  ## force complete redraw for every plot
 
 
 ## Start Qt event loop unless running in interactive mode.
@@ -273,40 +273,40 @@ if __name__ == '__main__':
     processedData = Queue()
     try:
         try:
-                graphToPlot = sys.argv[1]		#line, scatter,scatter_3d,line_3d aas first parameter
-                dataRequestParams = sys.argv[2:4]        #(c), (s), (f,frequency)
-                autopilot = sys.argv[4]
+			graphToPlot = sys.argv[1]		#line, scatter,scatter_3d,line_3d aas first parameter
+			dataRequestParams = sys.argv[2:4]        #(c), (s), (f,frequency)
+			autopilot = sys.argv[4]
         except:
-        		#Default graph and Request parameters
-                autopilot = 1
-                graphToPlot = "scatter"
-                dataRequestParams = ['f','0.5']
+			#Default graph and Request parameters
+			autopilot = 1
+			graphToPlot = "scatter"
+			dataRequestParams = ['f','0.1']
 
         if dataRequestParams[0]=='f':
-                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],dataRequestParams[1], processedData, autopilot,))
+			dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+			args = (dataRequestParams[0],dataRequestParams[1], processedData, autopilot,))
         elif dataRequestParams[0] in ['c','s']:
-                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],processedData,autopilot,))
+			dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+			args = (dataRequestParams[0],processedData,autopilot,))
         else:
-                print "Incorrect Parameters for client, Requesting continuous data"
-                dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
-                        args = (dataRequestParams[0],processedData,autopilot,))
+			print "Incorrect Parameters for client, Requesting continuous data"
+			dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \
+			args = (dataRequestParams[0],processedData,autopilot,))
 
         dataProcessingThread.daemon = True
         dataProcessingThread.start()
 
         if graphToPlot == "line":
-                line_graph(processedData)
+			line_graph(processedData)
         elif graphToPlot == "line_3d":
-                line_graph_3d(processedData)
+			line_graph_3d(processedData)
         elif graphToPlot == "scatter":
-                scatter_plot(processedData)
+			scatter_plot(processedData)
         elif graphToPlot == "scatter_3d":
-                scatter_plot_3d(processedData)
+			scatter_plot_3d(processedData)
         else:
-                print "incorrect graph name, rendering scatter plot"
-                scatter_plot(processedData)
+			print "incorrect graph name, rendering scatter plot"
+			scatter_plot(processedData)
 
     except Exception as e:
         print "Exception caught in graph module, "+str(e)

@@ -8,26 +8,26 @@ import threading
 import time
 import shutil   
 
-_HOST = "192.168.43.131"
+_HOST = "192.168.0.104"
 #_HOST = "0.0.0.0"
 
 rawData = Queue()
 
 def main(*params):
 	
-        begin_time = time.time()
+	begin_time = time.time()
 
-        print threading.activeCount()
+	print threading.activeCount()
 	try:
-	        # Request Data at a particular frequency
-	        print params
+		# Request Data at a particular frequency
+		print params
 		if len(params)==4:
-                    formatDataThread = Thread(target = printThread, args = (params[2],))
+		    formatDataThread = Thread(target = printThread, args = (params[2],))
 		    clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
 		    print "Thread CReated"
 		#Request Single line Data or Continuous data
 		else:
-                    formatDataThread = Thread(target = printThread, args = (params[1],))
+		    formatDataThread = Thread(target = printThread, args = (params[1],))
 		    clientThread = Thread(target = client,args = (params[0],params[2],))
 		    print "Thread CReated"
 		
@@ -72,36 +72,36 @@ def printThread(formattedData):
 
 
 def client(*args):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-        host = _HOST
-        port = 50001
-        
-        try :
-                s.connect((host, port)) 
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
+	host = _HOST
+	port = 50001
+	
+	try :
+		s.connect((host, port)) 
 
-                s.settimeout(30.0)
+		s.settimeout(30.0)
 
-                print args
-                s.send(args[0])
-                if args[0]=='f':
-                    s.send(args[1])
+		print args
+		s.send(args[0])
+		if args[0]=='f':
+			s.send(args[1])
 
-                while True:
-                        tm = s.recv(1024)
+		while True:
+				tm = s.recv(1024)
 
-                        if not tm:
-                             break
-                        rawData.put(tm)
-                
-                
-                s.shutdown(socket.SHUT_RDWR)
-                print "Socket Shutdown Complete !!"
-                sys.exit(0)
-                return
+				if not tm:
+					 break
+				rawData.put(tm)
+		
+		
+		s.shutdown(socket.SHUT_RDWR)
+		print "Socket Shutdown Complete !!"
+		sys.exit(0)
+		return
 
-        except socket.error as msg :
-                print 'Connect failed. \nError Code : ' + str(msg)
-                return
+	except socket.error as msg :
+		print 'Connect failed. \nError Code : ' + str(msg)
+		return
 
 #if __name__=="__main__":
 #q = Queue()
