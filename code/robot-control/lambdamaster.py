@@ -69,9 +69,12 @@ def main():
         raise
 
 def getFileName():
+    directory = '../../data/live-data'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     number = 0
     while True:
-        fileNamePath = '../../data/live-data/record_%d.csv' % number
+        fileNamePath = directory + ('/record_%d.csv' % number)
         if not os.path.exists(fileNamePath):
             return fileNamePath
         else:
@@ -285,23 +288,23 @@ def autopilot(type='sonar', speed=255):
                             writeMotorSpeeds(MAX_SPEED, MAX_SPEED - pidOutput)      # turn right if PID output is +ve
 
                     elif obstacle < 0:
-                        robotPID.setPoint -= TURN_ANGLE
-                        if robotPID.setPoint < -180:
-                            robotPID.setPoint += 360
+                        robotPID.setPoint += TURN_ANGLE
+                        if robotPID.setPoint > 180:
+                            robotPID.setPoint -= 360
 
                         writeMotorSpeeds(speed, -speed)
-                        while abs(getSensorData()[YAW_INDEX] - robotPID.setPoint) > 5:
+                        while (robotPID.setPoint - getSensorData()[YAW_INDEX])  > 5:
                             pass
                         else:
                             writeMotorSpeeds(0, 0)
 
                     elif obstacle >=0:
-                        robotPID.setPoint += TURN_ANGLE
-                        if robotPID.setPoint > 180:
-                            robotPID.setPoint -= 360
+                        robotPID.setPoint -= TURN_ANGLE
+                        if robotPID.setPoint < -180:
+                            robotPID.setPoint += 360
 
                         writeMotorSpeeds(-speed, speed)
-                        while abs(getSensorData()[YAW_INDEX] - robotPID.setPoint) > 5:
+                        while getSensorData()[YAW_INDEX] - robotPID.setPoint > 5:
                             pass
                         else:
                             writeMotorSpeeds(0, 0)
