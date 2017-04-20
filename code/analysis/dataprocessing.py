@@ -37,7 +37,11 @@ def coordinates(*args):
 	while True:
 		if int(formattedData.qsize()) == 0:
 			continue
+
 		firstRow = formattedData.get()
+		if int(firstRow[usColumn]) == 0:
+			continue
+		
 		break
 	
 	x = y = 0
