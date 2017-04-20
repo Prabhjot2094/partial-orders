@@ -55,9 +55,9 @@ def main():
 
         dataReadFlag = False
 
-        drive('autopilot-sonar-yaw', 255, False)
-        while True:
-            time.sleep(0.01)
+        #drive('autopilot-sonar-yaw', 255, False)
+        #while True:
+        #    time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()

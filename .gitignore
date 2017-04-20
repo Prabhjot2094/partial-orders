@@ -5,3 +5,6 @@
 *.swo 
 
 *.DS_Store
+
+# Data Files
+.csv
