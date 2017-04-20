@@ -3,8 +3,9 @@
 *.pyc
 *.swp
 *.swo 
+*.swn
 
 *.DS_Store
 
 # Data Files
-.csv
+*.csv
