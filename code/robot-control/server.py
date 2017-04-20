@@ -30,7 +30,7 @@ def main():
         print 'Socket now listening'
          
         try:
-            lm.drive('forward',255,True)
+            lm.drive('stop',255,False)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
@@ -81,20 +81,20 @@ def clientThread(conn):
                 data = '@'+str(lm.getSensorData())+'@'
                 conn.send(data);
                 time.sleep(frequency)
+                print data
 
         elif str(initCharacter)=="c":
+            print "Sending Continuous Data"
             while 1:
                 data = '@'+str(lm.getSensorData())+'@'
                 conn.send(data)
-                print data
-
         else:
             print "No match"
 
     except socket.error as msg:
         threadActiveCount -= 1
         if threadActiveCount is 0:
-            lm.halt()
+            lm.drive('halt')
 
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]
