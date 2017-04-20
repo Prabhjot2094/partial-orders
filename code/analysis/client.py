@@ -79,7 +79,7 @@ def client(*args):
         try :
                 s.connect((host, port)) 
 
-                s.settimeout(10.0)
+                s.settimeout(30.0)
 
                 print args
                 s.send(args[0])

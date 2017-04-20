@@ -280,7 +280,7 @@ if __name__ == '__main__':
         		#Default graph and Request parameters
                 autopilot = 1
                 graphToPlot = "scatter"
-                dataRequestParams = ['f','0.01']
+                dataRequestParams = ['f','0.5']
 
         if dataRequestParams[0]=='f':
                 dataProcessingThread = Process(name = "Data Processing" ,target=data.processData, \

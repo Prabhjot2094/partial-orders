@@ -31,8 +31,8 @@ def processData(*args):
 def coordinates(*args):
 	global formattedData
 	processedData = args[0]
-	yawColumn = 6
-	usColumn = 4
+	yawColumn = 23
+	usColumn = 3
 
 	while True:
 		if int(formattedData.qsize()) == 0:
@@ -40,7 +40,7 @@ def coordinates(*args):
 		firstRow = formattedData.get()
 		break
 	
-	prevX = prevY = 0
+	x = y = 0
 	previousYaw = float(firstRow[yawColumn])
 	previousDistance = float(firstRow[usColumn])
 	
@@ -53,17 +53,31 @@ def coordinates(*args):
 		currentYaw = float(dataList[yawColumn])
 		currentDistance = float(dataList[usColumn])
 
+		if currentDistance == 0:
+			continue
 		distanceDiff = previousDistance-currentDistance
+		
 
 		if currentYaw-previousYaw > 35:
 			previousDistance = currentDistance
 			prevousYaw = currentYaw
 			continue
 
-		x = math.cos(math.radians(currentYaw))*distanceDiff + prevX
-		y = math.sin(math.radians(currentYaw))*distanceDiff + prevY
+		localX = math.cos(math.radians(currentYaw))*distanceDiff
+		localY = math.sin(math.radians(currentYaw))*distanceDiff
+		
+		distance = math.hypot(x - localX, y - localY)
 
-		print x,y
+		print "distance Diff = %f"%(distanceDiff)
+		print "localX = %f, localY = %f, distance = %f"%(localX,localY,distance)
+		#if distance > 7:
+		#	continue
+
+		x += localX
+		y += localY
+
+		previousDistance = currentDistance
+		print "x = %f ,y = %f"%(x,y)
 		processedData.put([x,y])
 
 
