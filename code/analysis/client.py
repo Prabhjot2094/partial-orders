@@ -8,7 +8,7 @@ import threading
 import time
 import shutil   
 
-_HOST = "192.168.0.104"
+_HOST = "192.168.1.101"
 #_HOST = "0.0.0.0"
 
 rawData = Queue()
@@ -60,6 +60,7 @@ def printThread(formattedData):
                 if len(r) is 0 or r[-1] is not ']':
                     continue
                 l = ast.literal_eval(r)
+                print l
                 formattedData.put(l)
             leftover_data = ''
 
