@@ -29,15 +29,15 @@ def main():
         s.listen(0)
         print 'Socket now listening'
          
-        try:
-            print "Driving"
-            lm.drive("autopilot-sonar",255,False)
+        #try:
+        #    print "Driving"
+            #lm.drive("stop",255,False)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
-        except Exception as e:
-            print "Exception in Sensor Data thread, ",e
-            sys.exit(0)
+        #except Exception as e:
+        #    print "Exception in Sensor Data thread, ",e
+        #    sys.exit(0)
         
         i=0
         while 1:
@@ -51,7 +51,7 @@ def main():
                 t.setDaemon(True)
                 t.start()
             
-                threadActiveCount += 1
+                #threadActiveCount += 1
             except Exception as e:
                 print "Exception in client connection thread, ",e
                 sys.exit(0)
@@ -67,11 +67,17 @@ def clientThread(conn):
 
     global threadActiveCount
     try:
+        threadActiveCount += 1
+        if threadActiveCount == 1:
+            lm.drive("stop",255,False)
         initCharacter = conn.recv(1)
         print str(initCharacter)
 
         if initCharacter == "s":
-            data = '@'+str(lm.getSensorData())+'@'
+            while int(lm.sensorDataQueue.qsize()) == 0:
+                print "0"
+                continue
+            data = '@'+str(lm.sensorDataQueue.get())+'@'
             conn.send(data)
             conn.close()
             return
@@ -79,7 +85,10 @@ def clientThread(conn):
         elif initCharacter == "f":
             frequency = float(conn.recv(38))
             while 1:
-                data = '@'+str(lm.getSensorData())+'@'
+                while int(lm.sensorDataQueue.qsize()) == 0:
+                    print "0"
+                    continue
+                data = '@'+str(lm.sensorDataQueue.get())+'@'
                 conn.send(data);
                 time.sleep(frequency)
                 print data
@@ -87,7 +96,11 @@ def clientThread(conn):
         elif str(initCharacter)=="c":
             print "Sending Continuous Data"
             while 1:
-                data = '@'+str(lm.getSensorData())+'@'
+                while int(lm.sensorDataQueue.qsize()) == 0:
+                    print "0"
+                    continue
+                data = '@'+str(lm.sensorDataQueue.get())+'@'
+                print data
                 conn.send(data)
         else:
             print "No match"

@@ -1,3 +1,4 @@
+from multiprocessing import Queue
 import csv
 import os
 import smbus
@@ -33,6 +34,7 @@ dataReadFlag = False
 dataLogFlag = False
 autopilotFlag = False
 initialtime = 0
+sensorDataQueue = Queue()
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
@@ -133,6 +135,7 @@ def writeMotorSpeeds(speedLeft, speedRight):
         shutdown()
 
 def readSensorData():
+    global sensorDataQueue
     global sensorData
     global sensorDataReady
     global dataReadFlag
@@ -155,7 +158,7 @@ def readSensorData():
                     sensorTileDataHandler()
 
                     sensorDataReady = True
-
+                    sensorDataQueue.put(sensorData)
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
 
