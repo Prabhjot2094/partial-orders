@@ -68,8 +68,8 @@ class processData():
             
             distance = math.hypot(x - localX, y - localY)
 
-            print "distance Diff = %f"%(distanceDiff)
-            print "localX = %f, localY = %f, distance = %f"%(localX,localY,distance)
+            #print "distance Diff = %f"%(distanceDiff)
+            #print "localX = %f, localY = %f, distance = %f"%(localX,localY,distance)
             #if distance > 7:
             #	continue
 
@@ -77,8 +77,8 @@ class processData():
             y += localY
 
             previousDistance = currentDistance
-            print "x = %f ,y = %f"%(x,y)
-            self.processedData.put([x,y])
+            #print "x = %f ,y = %f"%(x,y)
+            self.processedData.put([x,y,0])
 
 
 #if __name__ == '__main__':
