@@ -1,3 +1,4 @@
+import math
 from multiprocessing import Queue
 import csv
 import os
@@ -18,9 +19,11 @@ YAW_P                       = 1.5
 YAW_I                       = 0.0
 YAW_D                       = 0.0
 YAW_INDEX                   = 23
+US_INDEX                    = 3
 MAX_SPEED                   = 255
 TURN_ANGLE                  = 45
-OBSTACLE_DISTANCE           = 18
+OBSTACLE_DISTANCE           = 10
+MAX_DISTANCE_DIFF           = 5
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -28,13 +31,17 @@ try:
 except:
     sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
-sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT)
+sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
 sensorDataReady = False
 dataReadFlag = False
 dataLogFlag = False
 autopilotFlag = False
 initialtime = 0
 sensorDataQueue = Queue()
+prevX = prevY = None
+turningFlag = False
+turnFlag = False
+prevUS = None
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
@@ -56,12 +63,6 @@ def main():
         except Exception as e:
             print "Exception in dataReadThread " + str(e)
             shutdown()
-
-        dataReadFlag = False
-
-        #drive('autopilot-sonar', 255, False)
-        #while True:
-        #    time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -125,17 +126,69 @@ def sensorTileDataHandler():
     except:
         sensorTileDataHandler()
 
-def writeMotorSpeeds(speedLeft, speedRight):
-    try:
-        arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(int(speedLeft)), lowByte(int(speedLeft)), highByte(int(speedRight)), lowByte(int(speedRight))])
-    except IOError:
-        writeMotorSpeeds(speedLeft, speedRight)
-    except Exception as e:
-        print "Exception " + str(e)
-        shutdown()
+def dataProcessor():
+        global sensorData
+        global prevX
+        global prevY
+        global prevUS
+        global turningFlag
+        global turnFlag
+
+        if turnFlag is True and turningFlag is False:
+            turning = True
+            sensorData[-2] = prevX
+            sensorData[-1] = prevY
+            return
+
+        elif turnFlag is False and turningFlag is True:
+            turningFlag = False
+            sensorData[-2] = prevX
+            sensorData[-1] = prevY
+            prevUS = float(sensorData[US_INDEX])
+            return
+            
+        if prevX is None and prevY is None:
+            prevUS = float(sensorData[US_INDEX])
+            if prevUS == 0:
+                prevUS = None
+                sensorData[-2] = 0
+                sensorData[-1] = 0
+                return
+            sensorData[-2] = 0
+            sensorData[-1] = 0
+            prevX = prevY = 0
+            return
+
+        currentYaw = float(sensorData[YAW_INDEX])
+        currentDistance = float(sensorData[US_INDEX])
+
+        if currentDistance == 0:
+            sensorData[-2] = prevX
+            sensorData[-1] = prevY
+            return
+        
+        distanceDiff = prevUS - currentDistance
+
+        if distanceDiff > MAX_DISTANCE_DIFF:
+            sensorData[-2] = prevX
+            sensorData[-1] = prevY
+            return
+
+        localX = math.cos(math.radians(currentYaw))*distanceDiff
+        localY = math.sin(math.radians(currentYaw))*distanceDiff
+        
+        print sensorData
+        print "localX = %f, LocalY = %f, distanceDiff = %f"%(localX, localY, distanceDiff)
+        prevX += localX
+        prevY += localY
+        print "X = %f, Y= %f"%(prevX,prevY)
+
+        sensorData[-2] = prevX
+        sensorData[-1] = prevY
+        prevUS = currentDistance
+
 
 def readSensorData():
-    global sensorDataQueue
     global sensorData
     global sensorDataReady
     global dataReadFlag
@@ -156,14 +209,23 @@ def readSensorData():
                     sensorData[0] = currentTime
                     arduinoDataHandler()
                     sensorTileDataHandler()
-
+                    dataProcessor()
+                    
                     sensorDataReady = True
-                    sensorDataQueue.put(sensorData)
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
 
             else:
                 time.sleep(0.01)
+
+def writeMotorSpeeds(speedLeft, speedRight):
+    try:
+        arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(int(speedLeft)), lowByte(int(speedLeft)), highByte(int(speedRight)), lowByte(int(speedRight))])
+    except IOError:
+        writeMotorSpeeds(speedLeft, speedRight)
+    except Exception as e:
+        print "Exception " + str(e)
+        shutdown()
 
 def checkObstacle(sensorData, obstacleArray=[]):
     obstacleFlag = False
@@ -240,6 +302,8 @@ def drive(command, speed=127, dataLog=True):
 
 def autopilot(type='sonar', speed=255):
     global autopilotFlag
+    global sensorDataQueue
+    global trunFlag
 
     if type == 'sonar-yaw':
         robotPID = PID.PID(YAW_P, YAW_I, YAW_D)
@@ -249,20 +313,28 @@ def autopilot(type='sonar', speed=255):
     while True:
         if autopilotFlag:
             sensorData = getSensorData()
+            sensorDataQueue.put(sensorData)
 
             if type == 'sonar':
-                obstacle = checkObstacle(sensorData)
+                obstacleArray = []
+                obstacle = checkObstacle(sensorData, obstacleArray)
 
-                if obstacle == 100:     # no obstacle
+                if obstacleArray[2] == 0:
+                    writeMotorSpeeds(0, 0)
+                elif obstacle == 100:     # no obstacle
                     writeMotorSpeeds(speed, speed)
                 elif obstacle < 0:      # obstacle towards left
+                    turnFlag = True
                     writeMotorSpeeds(speed, -speed)
                     time.sleep(.500)
                     writeMotorSpeeds(0, 0)
+                    turnFlag = False
                 elif obstacle >= 0:     # obstacle towards right or in front
+                    turnFlag = True
                     writeMotorSpeeds(-speed, speed)
                     time.sleep(.500)
                     writeMotorSpeeds(0, 0)
+                    turnFlag = False
 
             elif type == 'sonar-yaw':
                 obstacleArray = []
@@ -311,6 +383,8 @@ def autopilot(type='sonar', speed=255):
 
         else:
             return
+
+        time.sleep(0.005)
 
 def shutdown():
     print "Shutting Down"

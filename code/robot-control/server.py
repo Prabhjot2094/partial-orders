@@ -29,15 +29,15 @@ def main():
         s.listen(0)
         print 'Socket now listening'
          
-        #try:
-        #    print "Driving"
-            #lm.drive("stop",255,False)
+        try:
+            print "Driving"
+            lm.drive("autopilot-sonar",255,False)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
-        #except Exception as e:
-        #    print "Exception in Sensor Data thread, ",e
-        #    sys.exit(0)
+        except Exception as e:
+            print "Exception in Sensor Data thread, ",e
+            sys.exit(0)
         
         i=0
         while 1:
@@ -68,14 +68,14 @@ def clientThread(conn):
     global threadActiveCount
     try:
         threadActiveCount += 1
-        if threadActiveCount == 1:
-            lm.drive("stop",255,False)
+        #if threadActiveCount == 1:
+        #    print "Autopilot Called"
+        #    lm.drive("autopilot-sonar",255,False)
         initCharacter = conn.recv(1)
         print str(initCharacter)
 
         if initCharacter == "s":
             while int(lm.sensorDataQueue.qsize()) == 0:
-                print "0"
                 continue
             data = '@'+str(lm.sensorDataQueue.get())+'@'
             conn.send(data)
@@ -86,7 +86,6 @@ def clientThread(conn):
             frequency = float(conn.recv(38))
             while 1:
                 while int(lm.sensorDataQueue.qsize()) == 0:
-                    print "0"
                     continue
                 data = '@'+str(lm.sensorDataQueue.get())+'@'
                 conn.send(data);
@@ -98,10 +97,12 @@ def clientThread(conn):
             while 1:
                 while int(lm.sensorDataQueue.qsize()) == 0:
                     print "0"
+                    time.sleep(0.05)
                     continue
                 data = '@'+str(lm.sensorDataQueue.get())+'@'
                 print data
                 conn.send(data)
+                time.sleep(0.05)
         else:
             print "No match"
 
