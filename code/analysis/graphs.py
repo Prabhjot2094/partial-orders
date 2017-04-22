@@ -262,7 +262,7 @@ class scatter_plot:
 				return
 		dataRow = self.processedData.get()
 
-		self.curve.addPoints([dataRow[0]],[dataRow[1]])
+		self.curve.addPoints([float(dataRow[-2])],[float(dataRow[-1])])
 
 		#self.p.repaint()
 		#app.processEvents()  ## force complete redraw for every plot

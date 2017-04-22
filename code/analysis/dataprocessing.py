@@ -12,20 +12,22 @@ class processData():
 
 	try:
             if args[0]=='f':
-				clientThread = Thread(name = "client", target=client.main, args=(args[0],args[1], self.formattedData, args[3]))
-				self.processedData = args[2]
+				clientThread = Thread(name = "client", target=client.main, args=(args[0],args[1], args[2], args[3]))
             else:
-				clientThread = Thread(name = "client", target=client.main, args=(args[0], self.formattedData, args[2]))
-				self.processedData = args[1]
-
+				clientThread = Thread(name = "client", target=client.main, args=(args[0], args[1], args[2]))
+			
+            print "Client Running"
             clientThread.setDaemon(True)
             clientThread.start()
+
+            while 1:
+				pass
 
 	except Exception as e:
             print "Exception in DataProcessing OR Client spawned from DataProcessing ,",e
             raise Exception('In DataProcessing')
 
-	self.coordinates()
+	#self.coordinates()
 
     def coordinates(self):
         yawColumn = 23
@@ -59,9 +61,9 @@ class processData():
             distanceDiff = previousDistance-currentDistance
             
             if currentYaw-previousYaw > 35:
-                    previousDistance = currentDistance
-                    prevousYaw = currentYaw
-                    continue
+				previousDistance = currentDistance
+				prevousYaw = currentYaw
+				continue
 
             localX = math.cos(math.radians(currentYaw))*distanceDiff
             localY = math.sin(math.radians(currentYaw))*distanceDiff

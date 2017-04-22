@@ -8,7 +8,7 @@ import threading
 import time
 import shutil   
 
-_HOST = "192.168.1.101"
+_HOST = "lambdapi.local"
 #_HOST = "0.0.0.0"
 
 rawData = Queue()
@@ -20,7 +20,7 @@ def main(*params):
 	print threading.activeCount()
 	try:
 		# Request Data at a particular frequency
-		print params
+		print "Params" , params
 		if len(params)==4:
 		    formatDataThread = Thread(target = printThread, args = (params[2],))
 		    clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
@@ -60,7 +60,7 @@ def printThread(formattedData):
                 if len(r) is 0 or r[-1] is not ']':
                     continue
                 l = ast.literal_eval(r)
-                #print l[3],l[23]
+                print l[-2],l[-1]
                 formattedData.put(l)
             leftover_data = ''
 
