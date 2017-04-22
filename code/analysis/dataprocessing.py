@@ -10,24 +10,23 @@ class processData():
     def __init__(self,*args):
         self.formattedData = Queue()
 
-	try:
+        try:
             if args[0]=='f':
-				clientThread = Thread(name = "client", target=client.main, args=(args[0],args[1], args[2], args[3]))
+                clientThread = Thread(name = "client", target=client.main, args=(args[0],args[1], args[2], args[3]))
             else:
-				clientThread = Thread(name = "client", target=client.main, args=(args[0], args[1], args[2]))
-			
-            print "Client Running"
+                clientThread = Thread(name = "client", target=client.main, args=(args[0], args[1], args[2]))
+
             clientThread.setDaemon(True)
             clientThread.start()
 
             while 1:
-				pass
+                pass
 
-	except Exception as e:
+        except Exception as e:
             print "Exception in DataProcessing OR Client spawned from DataProcessing ,",e
             raise Exception('In DataProcessing')
 
-	#self.coordinates()
+        #self.coordinates()
 
     def coordinates(self):
         yawColumn = 23
@@ -35,51 +34,48 @@ class processData():
 
         while True:
             if int(self.formattedData.qsize()) == 0:
-                    continue
-
-            firstRow = self.formattedData.get()
-            if int(firstRow[usColumn]) == 0:
-                    continue
+                continue
             
+            firstRow = self.formattedData.get()
+
+            if int(firstRow[usColumn]) == 0:
+                continue
+
             break
-        
+
         x = y = 0
         previousYaw = float(firstRow[yawColumn])
         previousDistance = float(firstRow[usColumn])
-        
+
         while True:
             if int(self.formattedData.qsize()) == 0:
-                    continue
+                continue
 
             dataList = self.formattedData.get()
-            
+
             currentYaw = float(dataList[yawColumn])
             currentDistance = float(dataList[usColumn])
 
             if currentDistance == 0:
-                    continue
-            distanceDiff = previousDistance-currentDistance
+                continue
             
+            distanceDiff = previousDistance-currentDistance
+
             if currentYaw-previousYaw > 35:
-				previousDistance = currentDistance
-				prevousYaw = currentYaw
-				continue
+                previousDistance = currentDistance
+                prevousYaw = currentYaw
+                continue
 
             localX = math.cos(math.radians(currentYaw))*distanceDiff
             localY = math.sin(math.radians(currentYaw))*distanceDiff
-            
-            distance = math.hypot(x - localX, y - localY)
 
-            #print "distance Diff = %f"%(distanceDiff)
-            #print "localX = %f, localY = %f, distance = %f"%(localX,localY,distance)
-            #if distance > 7:
-            #	continue
+            distance = math.hypot(x-localX, y-localY)
 
             x += localX
             y += localY
 
             previousDistance = currentDistance
-            #print "x = %f ,y = %f"%(x,y)
+            
             self.processedData.put([x,y,0])
 
 

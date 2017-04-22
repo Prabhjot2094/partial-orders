@@ -14,36 +14,33 @@ _HOST = "lambdapi.local"
 rawData = Queue()
 
 def main(*params):
-	
-	begin_time = time.time()
 
-	print threading.activeCount()
-	try:
-		# Request Data at a particular frequency
-		print "Params" , params
-		if len(params)==4:
-		    formatDataThread = Thread(target = printThread, args = (params[2],))
-		    clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
-		    print "Thread CReated"
-		#Request Single line Data or Continuous data
-		else:
-		    formatDataThread = Thread(target = printThread, args = (params[1],))
-		    clientThread = Thread(target = client,args = (params[0],params[2],))
-		    print "Thread CReated"
-		
-		formatDataThread.setDaemon(True)
-		formatDataThread.setDaemon(True)
-		
-		formatDataThread.start()
-		clientThread.start()
-	
-	except Exception as e:
-		print e
-		raise Exception('Client thread encountered an error')
+    begin_time = time.time()
 
-	print "Time Taken = ",time.time()-begin_time
-	while 1:
-		continue
+    print threading.activeCount()
+    try:
+        if len(params)==4:
+            formatDataThread = Thread(target = printThread, args = (params[2],))
+            clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
+            print "Thread Created"
+        else:
+            formatDataThread = Thread(target = printThread, args = (params[1],))
+            clientThread = Thread(target = client,args = (params[0],params[2],))
+            print "Thread CReated"
+
+        formatDataThread.setDaemon(True)
+        formatDataThread.setDaemon(True)
+
+        formatDataThread.start()
+        clientThread.start()
+
+    except Exception as e:
+        print e
+        raise Exception('Client thread encountered an error')
+
+    print "Time Taken = ",time.time()-begin_time
+    while 1:
+        continue
 
 def printThread(formattedData):
     main_row = []
@@ -52,9 +49,9 @@ def printThread(formattedData):
     while 1:
         try:
             row = rawData.get()
-            
+
             row = leftover_data+row
-            
+
             split_row = row.split('@')
             for r in split_row:
                 if len(r) is 0 or r[-1] is not ']':
@@ -62,10 +59,12 @@ def printThread(formattedData):
                 l = ast.literal_eval(r)
                 print l[-2],l[-1]
                 formattedData.put(l)
+            
             leftover_data = ''
 
             if row[-1] != '@':
                 leftover_data = split_row[-1]
+        
         except Exception as e:
             print e
             print "Errorrrrr !!!!!"
@@ -73,36 +72,35 @@ def printThread(formattedData):
 
 
 def client(*args):
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-	host = _HOST
-	port = 50001
-	
-	try :
-		s.connect((host, port)) 
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
+        host = _HOST
+        port = 50001
 
-		s.settimeout(30.0)
+        try :
+            s.connect((host, port)) 
 
-		print args
-		s.send(args[0])
-		if args[0]=='f':
-			s.send(args[1])
+            s.settimeout(30.0)
 
-		while True:
-				tm = s.recv(1024)
+            print args
+            s.send(args[0])
+            if args[0]=='f':
+                s.send(args[1])
 
-				if not tm:
-					 break
-				rawData.put(tm)
-		
-		
-		s.shutdown(socket.SHUT_RDWR)
-		print "Socket Shutdown Complete !!"
-		sys.exit(0)
-		return
+            while True:
+                tm = s.recv(1024)
 
-	except socket.error as msg :
-		print 'Connect failed. \nError Code : ' + str(msg)
-		return
+                if not tm:
+                    break
+                rawData.put(tm)
+
+            s.shutdown(socket.SHUT_RDWR)
+            print "Socket Shutdown Complete !!"
+            sys.exit(0)
+            return
+
+        except socket.error as msg :
+            print 'Connect failed. \nError Code : ' + str(msg)
+            return
 
 #if __name__=="__main__":
 #q = Queue()
