@@ -191,13 +191,18 @@ class scatter_plot:
             return
         
         dataRow = self.processedData.get()
-        x,y = float(dataRow[-2]), float(dataRow[-1])
+        pos,wall = float(dataRow[-2]), float(dataRow[-1])
 
         if self.prev == dataRow:
             self.prev = dataRow
             return
+
         print x,"  ",y
-        self.curve.addPoints(x=[x],y=[y])
+        self.curve.addPoints(x=[pos[0][0]],y=[pos[0][1]])
+
+        for pos in wall:
+            self.curve.addPoints(x=[pos[0]],y=[pos[1]])
+
         self.prev = dataRow
 
 if __name__ == '__main__':

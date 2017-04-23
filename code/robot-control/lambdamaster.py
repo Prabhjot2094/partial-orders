@@ -147,16 +147,16 @@ def processFromSonar():
 
     if turnFlag is True and turningFlag is False:
         turningFlag = True
-        sensorData[-2] = prevX
-        sensorData[-1] = prevY
+        sensorData[-2] = (prevX,prevY)
+        #sensorData[-1] = prevY
 
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
         return
 
     elif turnFlag is False and turningFlag is True:
         turningFlag = False
-        sensorData[-4] = prevX
-        sensorData[-3] = prevY
+        sensorData[-2] = (prevX,prevY)
+        #sensorData[-1] = prevY
         prevUS = float(sensorData[US_INDEX])
 
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
@@ -166,11 +166,11 @@ def processFromSonar():
         prevUS = float(sensorData[US_INDEX])
         if prevUS == 0:
             prevUS = None
-            sensorData[-2] = 0
-            sensorData[-1] = 0
+            sensorData[-2] = (0,0)
+            #sensorData[-1] = 0
             return
-        sensorData[-2] = 0
-        sensorData[-1] = 0
+        sensorData[-2] = (0,0)
+        #sensorData[-1] = 0
         prevX = prevY = 0
         return
 
@@ -178,15 +178,15 @@ def processFromSonar():
     currentDistance = float(sensorData[US_INDEX])
 
     if currentDistance == 0:
-        sensorData[-2] = prevX
-        sensorData[-1] = prevY
+        sensorData[-2] = (prevX,prevY)
+        #sensorData[-1] = prevY
         return
     
     distanceDiff = prevUS - currentDistance
 
     if abs(distanceDiff) > MAX_DISTANCE_DIFF:
-        sensorData[-2] = prevX
-        sensorData[-1] = prevY
+        sensorData[-2] = (prevX,prevY)
+        #sensorData[-1] = prevY
         prevUS = currentDistance
         return
 
@@ -205,8 +205,8 @@ def processFromSonar():
     prevX += localX
     prevY += localY
 
-    sensorData[-2] = prevX
-    sensorData[-1] = prevY
+    sensorData[-2] = (prevX,prevY)
+    #sensorData[-1] = prevY
     prevUS = currentDistance
 
 def processFromEncoders():
