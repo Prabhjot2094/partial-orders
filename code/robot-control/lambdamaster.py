@@ -24,8 +24,9 @@ MAX_SPEED                   = 255
 TURN_ANGLE                  = 45
 OBSTACLE_DISTANCE           = 10
 MAX_DISTANCE_DIFF           = 25
-VERBOSE_DATA_REPORTING      = True
+VERBOSE_DATA_REPORTING      = False
 DATA_SOURCE                 = 'sonar'       # sonar or encoders
+SONAR_NUM                   = 5
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -71,9 +72,9 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-        drive('stop', 255, False)
-        while True:
-            time.sleep(0.01)
+#        drive('stop', 255, False)
+#        while True:
+#            time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
