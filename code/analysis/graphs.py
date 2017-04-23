@@ -133,7 +133,7 @@ class scatter_plot_3d:
         gz = gl.GLGridItem()
         gz.translate(0, 0, -10)
 
-        gx.scale(15,15, 0)
+        gx.scale(10,10, 0)
         gy.scale(15, 15, 0)
         gz.scale(15,15,0)
 
@@ -143,7 +143,7 @@ class scatter_plot_3d:
 
         self.data = [[0,0,0]]
 
-        self.plt = gl.GLScatterPlotItem(color=pg.glColor((100,5*2.3)))
+        self.plt = gl.GLScatterPlotItem(color='r')
         self.p.addItem(self.plt)
         
         self.plt.color = pg.glColor((100,5*1.3))
@@ -154,13 +154,13 @@ class scatter_plot_3d:
         QtGui.QApplication.instance().exec_()
         
     def update(self):
-        if int(self.processedData.qsize()) is 0:
-            return
+        #if int(self.processedData.qsize()) is 0:
+        #    return
         
-        dataRow = self.processedData.get()
+        #dataRow = self.processedData.get()
 
-        self.data.append(dataRow)
-
+        #self.data.append([dataRow[-2],dataRow[-1],0])
+        self.data.append([random.randint(1,100) for i in range(3)])
         pts = np.vstack(self.data)
 
         self.plt.setData(pos = pts) 
@@ -201,7 +201,12 @@ class scatter_plot:
         self.prev = dataRow
 
 if __name__ == '__main__':
+    
     processedData = Queue()
+    scatter_plot_3d(processedData)
+
+    while 1:
+        pass
     try:
         try:
             graphToPlot = sys.argv[1]	
