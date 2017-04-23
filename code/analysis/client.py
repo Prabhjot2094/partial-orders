@@ -57,7 +57,8 @@ def printThread(formattedData):
                 if len(r) is 0 or r[-1] is not ']':
                     continue
                 l = ast.literal_eval(r)
-                print l[-2],l[-1]
+                print l[23] , l[3]
+                print l[-2] , l[-1]
                 formattedData.put(l)
             
             leftover_data = ''
@@ -73,34 +74,34 @@ def printThread(formattedData):
 
 def client(*args):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-        host = _HOST
-        port = 50001
+    host = _HOST
+    port = 50001
 
-        try :
-            s.connect((host, port)) 
+    try :
+        s.connect((host, port)) 
 
-            s.settimeout(30.0)
+        s.settimeout(30.0)
 
-            print args
-            s.send(args[0])
-            if args[0]=='f':
-                s.send(args[1])
+        print args
+        s.send(args[0])
+        if args[0]=='f':
+            s.send(args[1])
 
-            while True:
-                tm = s.recv(1024)
+        while True:
+            tm = s.recv(1024)
 
-                if not tm:
-                    break
-                rawData.put(tm)
+            if not tm:
+                break
+            rawData.put(tm)
 
-            s.shutdown(socket.SHUT_RDWR)
-            print "Socket Shutdown Complete !!"
-            sys.exit(0)
-            return
+        s.shutdown(socket.SHUT_RDWR)
+        print "Socket Shutdown Complete !!"
+        sys.exit(0)
+        return
 
-        except socket.error as msg :
-            print 'Connect failed. \nError Code : ' + str(msg)
-            return
+    except socket.error as msg :
+        print 'Connect failed. \nError Code : ' + str(msg)
+        return
 
 #if __name__=="__main__":
 #q = Queue()

@@ -175,6 +175,7 @@ class scatter_plot:
         self.p = pg.plot()
 
         self.ptr = 0
+        self.prev = [0,0]
 
         self.curve = pg.ScatterPlotItem(pen='r',symbol='o')
         self.p.addItem(self.curve)
@@ -185,14 +186,19 @@ class scatter_plot:
 
         QtGui.QApplication.instance().exec_()
 	
-	def update(self):
-            if int(self.processedData.qsize()) is 0:
-                return
-            
-            dataRow = self.processedData.get()
-            x,y = float(dataRow[-2]), float(dataRow[-1])
+    def update(self):
+        if int(self.processedData.qsize()) is 0:
+            return
+        
+        dataRow = self.processedData.get()
+        x,y = float(dataRow[-2]), float(dataRow[-1])
 
-            self.curve.addPoints([x],[y])
+        if self.prev == dataRow:
+            self.prev = dataRow
+            return
+        print x,"  ",y
+        self.curve.addPoints(x=[x],y=[y])
+        self.prev = dataRow
 
 if __name__ == '__main__':
     processedData = Queue()
