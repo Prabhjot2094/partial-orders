@@ -25,6 +25,7 @@ TURN_ANGLE                  = 45
 OBSTACLE_DISTANCE           = 10
 MAX_DISTANCE_DIFF           = 25
 VERBOSE_DATA_REPORTING      = True
+DATA_SOURCE                 = 'sonar'       # sonar or encoders
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -32,7 +33,7 @@ try:
 except:
     sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
-sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
+sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 4)
 sensorDataReady = False
 dataReadFlag = False
 dataLogFlag = False
@@ -136,78 +137,86 @@ def sensorTileDataHandler():
     except:
         sensorTileDataHandler()
 
-def dataProcessor():
-        global sensorData
-        global prevX
-        global prevY
-        global prevUS
-        global turningFlag
-        global turnFlag
+def processFromSonar():
+    global sensorData
+    global prevX
+    global prevY
+    global prevUS
+    global turningFlag
+    global turnFlag
 
-        if turnFlag is True and turningFlag is False:
-            turningFlag = True
-            sensorData[-2] = prevX
-            sensorData[-1] = prevY
+    if turnFlag is True and turningFlag is False:
+        turningFlag = True
+        sensorData[-2] = prevX
+        sensorData[-1] = prevY
 
-            print "turn = %s, turning = %s"%(turnFlag,turningFlag)
-            return
+        print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        return
 
-        elif turnFlag is False and turningFlag is True:
-            turningFlag = False
-            sensorData[-2] = prevX
-            sensorData[-1] = prevY
-            prevUS = float(sensorData[US_INDEX])
+    elif turnFlag is False and turningFlag is True:
+        turningFlag = False
+        sensorData[-4] = prevX
+        sensorData[-3] = prevY
+        prevUS = float(sensorData[US_INDEX])
 
-            print "turn = %s, turning = %s"%(turnFlag,turningFlag)
-            return
-        
-        if prevX is None and prevY is None:
-            prevUS = float(sensorData[US_INDEX])
-            if prevUS == 0:
-                prevUS = None
-                sensorData[-2] = 0
-                sensorData[-1] = 0
-                return
+        print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        return
+    
+    if prevX is None and prevY is None:
+        prevUS = float(sensorData[US_INDEX])
+        if prevUS == 0:
+            prevUS = None
             sensorData[-2] = 0
             sensorData[-1] = 0
-            prevX = prevY = 0
             return
+        sensorData[-2] = 0
+        sensorData[-1] = 0
+        prevX = prevY = 0
+        return
 
-        currentYaw = float(sensorData[YAW_INDEX])
-        currentDistance = float(sensorData[US_INDEX])
+    currentYaw = float(sensorData[YAW_INDEX])
+    currentDistance = float(sensorData[US_INDEX])
 
-        if currentDistance == 0:
-            sensorData[-2] = prevX
-            sensorData[-1] = prevY
-            return
-        
-        distanceDiff = prevUS - currentDistance
+    if currentDistance == 0:
+        sensorData[-2] = prevX
+        sensorData[-1] = prevY
+        return
+    
+    distanceDiff = prevUS - currentDistance
 
-        if abs(distanceDiff) > MAX_DISTANCE_DIFF:
-            sensorData[-2] = prevX
-            sensorData[-1] = prevY
-            prevUS = currentDistance
-            return
-
-        localX = math.cos(math.radians(currentYaw))*distanceDiff
-        localY = math.sin(math.radians(currentYaw))*distanceDiff
-
-        tempX = prevX + localX
-        tempY = prevY + localY
-
-        #distance = math.hypot(tempX-prevX, tempY-prevY)
-        #if distance > MAX_DISTANCE_DIFF :
-        #    sensorData[-2] = prevX
-        #    sensorData[-1] = prevY
-        #    return
-
-
-        prevX += localX
-        prevY += localY
-
+    if abs(distanceDiff) > MAX_DISTANCE_DIFF:
         sensorData[-2] = prevX
         sensorData[-1] = prevY
         prevUS = currentDistance
+        return
+
+    localX = math.cos(math.radians(currentYaw))*distanceDiff
+    localY = math.sin(math.radians(currentYaw))*distanceDiff
+
+    tempX = prevX + localX
+    tempY = prevY + localY
+
+    #distance = math.hypot(tempX-prevX, tempY-prevY)
+    #if distance > MAX_DISTANCE_DIFF :
+    #    sensorData[-2] = prevX
+    #    sensorData[-1] = prevY
+    #    return
+
+    prevX += localX
+    prevY += localY
+
+    sensorData[-2] = prevX
+    sensorData[-1] = prevY
+    prevUS = currentDistance
+
+def processFromEncoders():
+   pass 
+
+def dataProcessor():
+    if DATA_SOURCE == 'sonar':
+        processFromSonar()
+    elif DATA_SOURCE == 'encoders':
+        processFromEncoders()
 
 def readSensorData():
     global sensorData
@@ -256,10 +265,10 @@ def writeMotorSpeeds(speedLeft, speedRight):
 def checkObstacle(sensorData, obstacleArray=[]):
     obstacleFlag = False
     obstacleSum = 0
-    for sensorIndex in range(1, 6):
+    for sensorIndex in range(1, SONAR_NUM + 1):
         obstacleArray.append(sensorData[sensorIndex]) 
         if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < OBSTACLE_DISTANCE:
-            obstacleSum += (sensorIndex - 3)
+            obstacleSum += (sensorIndex - (SONAR_NUM +1)/2)
             obstacleFlag = True
 
     if obstacleFlag:
