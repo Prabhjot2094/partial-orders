@@ -30,7 +30,8 @@ def main():
         print 'Socket now listening'
          
         try:
-            lm.drive('stop',255,False)
+            print "Driving"
+            lm.drive("autopilot-sonar",255,False)
             #dataThread = Thread(target=lm.getData)
             #dataThread.setDaemon(True)
             #dataThread.start()
@@ -49,8 +50,8 @@ def main():
                 t=Thread(target = clientThread,args = (conn,))
                 t.setDaemon(True)
                 t.start()
-                threadActiveCount += 1
             
+                #threadActiveCount += 1
             except Exception as e:
                 print "Exception in client connection thread, ",e
                 sys.exit(0)
@@ -66,11 +67,17 @@ def clientThread(conn):
 
     global threadActiveCount
     try:
+        threadActiveCount += 1
+        #if threadActiveCount == 1:
+        #    print "Autopilot Called"
+        #    lm.drive("autopilot-sonar",255,False)
         initCharacter = conn.recv(1)
         print str(initCharacter)
 
         if initCharacter == "s":
-            data = '@'+str(lm.getSensorData())+'@'
+            while int(lm.sensorDataQueue.qsize()) == 0:
+                continue
+            data = '@'+str(lm.sensorDataQueue.get())+'@'
             conn.send(data)
             conn.close()
             return
@@ -78,7 +85,9 @@ def clientThread(conn):
         elif initCharacter == "f":
             frequency = float(conn.recv(38))
             while 1:
-                data = '@'+str(lm.getSensorData())+'@'
+                while int(lm.sensorDataQueue.qsize()) == 0:
+                    continue
+                data = '@'+str(lm.sensorDataQueue.get())+'@'
                 conn.send(data);
                 time.sleep(frequency)
                 print data
@@ -86,15 +95,20 @@ def clientThread(conn):
         elif str(initCharacter)=="c":
             print "Sending Continuous Data"
             while 1:
-                data = '@'+str(lm.getSensorData())+'@'
+                while int(lm.sensorDataQueue.qsize()) == 0:
+                    time.sleep(0.05)
+                
+                data = '@'+str(lm.sensorDataQueue.get())+'@'
+                print data
                 conn.send(data)
+                time.sleep(0.05)
         else:
             print "No match"
 
     except socket.error as msg:
         threadActiveCount -= 1
         if threadActiveCount is 0:
-            lm.drive('halt')
+            lm.drive('stop')
 
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]
