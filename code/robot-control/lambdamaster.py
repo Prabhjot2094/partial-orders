@@ -33,7 +33,7 @@ try:
 except:
     sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
-sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 4)
+sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
 sensorDataReady = False
 dataReadFlag = False
 dataLogFlag = False
