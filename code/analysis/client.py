@@ -57,8 +57,6 @@ def printThread(formattedData):
                 if len(r) is 0 or r[-1] is not ']':
                     continue
                 l = ast.literal_eval(r)
-                print l[23] , l[3]
-                print l[-2] , l[-1]
                 formattedData.put(l)
             
             leftover_data = ''
