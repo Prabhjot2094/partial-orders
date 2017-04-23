@@ -45,7 +45,13 @@ prevUS = None
 
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
-def getWord (lowByte, highByte) : return ((highByte << 8) | lowByte)
+def getWord (lowByte, highByte): 
+    word = ((highByte << 8) | lowByte)
+    if word > 32767:
+        word -= 65536
+
+    print word
+    return word
 
 def main():
     try:
@@ -64,9 +70,9 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-#        drive('autopilot-sonar', 255, False)
-#        while True:
-#            time.sleep(0.01)
+        drive('stop', 255, False)
+        while True:
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -226,6 +232,7 @@ def readSensorData():
                     sensorTileDataHandler()
                     
                     sensorDataReady = True
+                    print sensorData
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
                     time.sleep(0.01)

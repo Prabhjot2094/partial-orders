@@ -1,10 +1,8 @@
 # Swap Files
 *~
 *.pyc
-*.swp
-*.swo 
-*.swn
-*.swm
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
 
 *.DS_Store
 
