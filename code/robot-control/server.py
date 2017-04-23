@@ -96,9 +96,8 @@ def clientThread(conn):
             print "Sending Continuous Data"
             while 1:
                 while int(lm.sensorDataQueue.qsize()) == 0:
-                    print "0"
                     time.sleep(0.05)
-                    continue
+                
                 data = '@'+str(lm.sensorDataQueue.get())+'@'
                 print data
                 conn.send(data)
