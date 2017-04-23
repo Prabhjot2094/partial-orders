@@ -197,7 +197,7 @@ class scatter_plot:
             self.prev = dataRow
             return
 
-        print x,"  ",y
+        print pos
         self.curve.addPoints(x=[pos[0][0]],y=[pos[0][1]])
 
         for pos in wall:
@@ -208,10 +208,6 @@ class scatter_plot:
 if __name__ == '__main__':
     
     processedData = Queue()
-    scatter_plot_3d(processedData)
-
-    while 1:
-        pass
     try:
         try:
             graphToPlot = sys.argv[1]	
