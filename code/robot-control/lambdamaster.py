@@ -24,6 +24,7 @@ MAX_SPEED                   = 255
 TURN_ANGLE                  = 45
 OBSTACLE_DISTANCE           = 10
 MAX_DISTANCE_DIFF           = 25
+VERBOSE_DATA_REPORTING      = True
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -50,7 +51,6 @@ def getWord (lowByte, highByte):
     if word > 32767:
         word -= 65536
 
-    print word
     return word
 
 def main():
@@ -231,8 +231,12 @@ def readSensorData():
                     arduinoDataHandler()
                     sensorTileDataHandler()
                     
+                    if VERBOSE_DATA_REPORTING:
+                        dataProcessor()
+                        sensorDataQueue.put(sensorData)
+
                     sensorDataReady = True
-                    print sensorData
+
                     if dataLogFlag:
                         csvfile.writerow(sensorData)
                     time.sleep(0.01)
@@ -337,8 +341,10 @@ def autopilot(type='sonar', speed=255):
     while True:
         if autopilotFlag:
             sensorData = getSensorData()
-            dataProcessor()
-            sensorDataQueue.put(sensorData)
+
+            if not VERBOSE_DATA_REPORTING:
+                dataProcessor()
+                sensorDataQueue.put(sensorData)
 
             if type == 'sonar':
                 obstacleArray = []
