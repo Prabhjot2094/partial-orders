@@ -90,7 +90,6 @@ def clientThread(conn):
                 data = '@'+str(lm.sensorDataQueue.get())+'@'
                 conn.send(data);
                 time.sleep(frequency)
-                print data
 
         elif str(initCharacter)=="c":
             print "Sending Continuous Data"
@@ -99,7 +98,6 @@ def clientThread(conn):
                     time.sleep(0.05)
                 
                 data = '@'+str(lm.sensorDataQueue.get())+'@'
-                print data
                 conn.send(data)
                 time.sleep(0.05)
         else:

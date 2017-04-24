@@ -146,20 +146,18 @@ def processFromSonar():
     global turningFlag
     global turnFlag
 
+    sensorData[-1] = [(207.0,133),(207.0,102),(121,199)]
     if turnFlag is True and turningFlag is False:
         turningFlag = True
-        sensorData[-2] = (prevX,prevY)
-        #sensorData[-1] = prevY
-
+        sensorData[-2] = [(prevX,prevY)]
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
         return
 
     elif turnFlag is False and turningFlag is True:
         turningFlag = False
-        sensorData[-2] = (prevX,prevY)
-        #sensorData[-1] = prevY
+        sensorData[-2] = [(prevX,prevY)]
         prevUS = float(sensorData[US_INDEX])
-
+        print sensorData
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
         return
     
@@ -167,47 +165,44 @@ def processFromSonar():
         prevUS = float(sensorData[US_INDEX])
         if prevUS == 0:
             prevUS = None
-            sensorData[-2] = (0,0)
-            #sensorData[-1] = 0
+            sensorData[-2] = [(0,0)]
             return
-        sensorData[-2] = (0,0)
-        #sensorData[-1] = 0
+        sensorData[-2] = [(0,0)]
         prevX = prevY = 0
+        print sensorData
         return
 
     currentYaw = float(sensorData[YAW_INDEX])
     currentDistance = float(sensorData[US_INDEX])
 
     if currentDistance == 0:
-        sensorData[-2] = (prevX,prevY)
-        #sensorData[-1] = prevY
+        sensorData[-2] = [(prevX,prevY)]
         return
     
     distanceDiff = prevUS - currentDistance
 
     if abs(distanceDiff) > MAX_DISTANCE_DIFF:
-        sensorData[-2] = (prevX,prevY)
-        #sensorData[-1] = prevY
+        sensorData[-2] = [(prevX,prevY)]
         prevUS = currentDistance
         return
 
     localX = math.cos(math.radians(currentYaw))*distanceDiff
     localY = math.sin(math.radians(currentYaw))*distanceDiff
 
+    '''
     tempX = prevX + localX
     tempY = prevY + localY
-
-    #distance = math.hypot(tempX-prevX, tempY-prevY)
-    #if distance > MAX_DISTANCE_DIFF :
-    #    sensorData[-2] = prevX
-    #    sensorData[-1] = prevY
-    #    return
+    distance = math.hypot(tempX-prevX, tempY-prevY)
+    if distance > MAX_DISTANCE_DIFF :
+        sensorData[-2] = prevX
+        sensorData[-1] = prevY
+        return
+    '''
 
     prevX += localX
     prevY += localY
 
-    sensorData[-2] = (prevX,prevY)
-    #sensorData[-1] = prevY
+    sensorData[-2] = [(prevX,prevY)]
     prevUS = currentDistance
 
 def processFromEncoders():
@@ -368,6 +363,7 @@ def autopilot(type='sonar', speed=255):
                     writeMotorSpeeds(speed, -speed)
                     
                     lock.acquire()
+                    print sensorData
                     dataProcessor()
                     lock.release()
                     
@@ -378,6 +374,7 @@ def autopilot(type='sonar', speed=255):
                     turnFlag = True
                     
                     lock.acquire()
+                    print sensorData
                     dataProcessor()
                     lock.release()
                     
