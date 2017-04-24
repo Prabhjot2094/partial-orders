@@ -191,17 +191,17 @@ class scatter_plot:
             return
         
         dataRow = self.processedData.get()
-        pos,wall = float(dataRow[-2]), float(dataRow[-1])
+        pos,wall = dataRow[-2], dataRow[-1]
 
         if self.prev == dataRow:
             self.prev = dataRow
             return
 
-        print pos
-        self.curve.addPoints(x=[pos[0][0]],y=[pos[0][1]])
+        self.curve.addPoints(x=[pos[0][0]],y=[pos[0][1]],pen='g', brush=pg.mkBrush(0, 255, 0, 255))
 
-        for pos in wall:
-            self.curve.addPoints(x=[pos[0]],y=[pos[1]])
+        if type(wall) is list:
+            for pos in wall:
+                self.curve.addPoints(x=[pos[0]],y=[pos[1]],pen='r', brush=pg.mkBrush(255,0, 0, 255))
 
         self.prev = dataRow
 
