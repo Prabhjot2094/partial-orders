@@ -1,3 +1,4 @@
+import readchar
 import math
 from multiprocessing import Queue
 import csv
@@ -354,7 +355,7 @@ def autopilot(type='sonar', speed=255):
             if type == 'sonar':
                 obstacleArray = []
                 obstacle = checkObstacle(sensorData, obstacleArray)
-
+                
                 if obstacle == 100:     # no obstacle
                     writeMotorSpeeds(speed, speed)
                     time.sleep(0.01)
@@ -382,6 +383,12 @@ def autopilot(type='sonar', speed=255):
                     time.sleep(.700)
                     writeMotorSpeeds(0, 0)
                     turnFlag = False
+                
+                writeMotorSpeeds(0, 0)
+                while true:
+                    ch = readchar.readchar():
+                    if ch == ' ':
+                        break
 
             elif type == 'sonar-yaw':
                 obstacleArray = []
