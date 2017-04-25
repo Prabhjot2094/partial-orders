@@ -72,9 +72,9 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-#        drive('stop', 255, False)
-#        while True:
-#            time.sleep(0.01)
+        drive('stop', 255, False)
+        while True:
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -146,7 +146,6 @@ def processFromSonar():
     global turningFlag
     global turnFlag
 
-    sensorData[-1] = [(207.0,133),(207.0,102),(121,199)]
     if turnFlag is True and turningFlag is False:
         turningFlag = True
         sensorData[-2] = [(prevX,prevY)]
@@ -236,6 +235,7 @@ def readSensorData():
                     arduinoDataHandler()
                     sensorTileDataHandler()
                     
+                    print sensorData
                     if VERBOSE_DATA_REPORTING:
                         dataProcessor()
                         sensorDataQueue.put(sensorData)
