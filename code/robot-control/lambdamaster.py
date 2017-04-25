@@ -28,6 +28,7 @@ MAX_DISTANCE_DIFF           = 25
 VERBOSE_DATA_REPORTING      = False
 DATA_SOURCE                 = 'sonar'       # sonar or encoders
 SONAR_NUM                   = 5
+ROBOT_SPEED                 = 7.5
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -45,8 +46,10 @@ sensorDataQueue = Queue()
 prevX = prevY = None
 turningFlag = False
 turnFlag = False
-prevUS = None
-
+prevUS = [None,None]
+interrupt = False
+referenceYaw = None
+x = y = 0
 def highByte (number) : return number >> 8
 def lowByte (number) : return number & 0x00FF
 def getWord (lowByte, highByte): 
@@ -73,9 +76,9 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-#        drive('stop', 255, False)
-#        while True:
-#            time.sleep(0.01)
+        #drive('autopilot-sonar', 255, False)
+        #while True:
+        #    time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -141,52 +144,107 @@ def sensorTileDataHandler():
 
 def processFromSonar():
     global sensorData
-    global prevX
-    global prevY
+    global prevX,prevY
+    global x,y
     global prevUS
     global turningFlag
     global turnFlag
+    global referenceYaw
+    global ROBOT_SPEED
+    global autopilotStartTime
 
-    sensorData[-1] = [(207.0,133),(207.0,102),(121,199)]
+    if prevX is None and prevY is None:
+        prevUS[0] = float(sensorData[US_INDEX])
+        if prevUS[0] == 0:
+            prevUS = [None,None]
+            sensorData[-2] = [(0,0)]
+            return
+        
+        referenceYaw = float(sensorData[YAW_INDEX])
+        print "Ref Yaw"
+        print referenceYaw
+
+        sensorData[-2] = [(0,0)]
+        prevX = prevY = 0
+        return
+    
+    currentYaw = float(sensorData[YAW_INDEX])
+    currentYaw -= referenceYaw
+    if currentYaw > 180:
+        currentYaw -= 360
+    elif currentYaw < -180:
+        currentYaw += 360
+    print "Current Yaw = ",currentYaw
+    
+    distance = ROBOT_SPEED*(time.time()-autopilotStartTime)
+    autopilotStartTime = time.time()
+
+    localX = math.cos(math.radians(currentYaw))*distance
+    localY = math.sin(math.radians(currentYaw))*distance
+
+    x+=localX
+    y+=localY
+    
+    sensorData[-1] = [(x,y)]
+   
+    return
     if turnFlag is True and turningFlag is False:
         turningFlag = True
-        sensorData[-2] = [(prevX,prevY)]
+        sensorData[-2] = ["Turn Start"]
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        print prevUS
+        print sensorData
         return
 
     elif turnFlag is False and turningFlag is True:
         turningFlag = False
-        sensorData[-2] = [(prevX,prevY)]
-        prevUS = float(sensorData[US_INDEX])
-        print sensorData
+        sensorData[-2] = ["Turn End"]
+        prevUS[1] = None
+        prevUS[0] = float(sensorData[US_INDEX])
         print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        print prevUS
+        print sensorData
         return
     
-    if prevX is None and prevY is None:
-        prevUS = float(sensorData[US_INDEX])
-        if prevUS == 0:
-            prevUS = None
-            sensorData[-2] = [(0,0)]
-            return
-        sensorData[-2] = [(0,0)]
-        prevX = prevY = 0
-        print sensorData
-        return
+    
 
-    currentYaw = float(sensorData[YAW_INDEX])
     currentDistance = float(sensorData[US_INDEX])
 
+    distanceDiff = prevUS[0] - currentDistance
+    
     if currentDistance == 0:
         sensorData[-2] = [(prevX,prevY)]
+        print "Distance 0"
+        print prevUS
+        print sensorData
         return
+   
+    if distanceDiff > MAX_DISTANCE_DIFF or distanceDiff < 0:
+        if prevUS[1] == None:
+            sensorData[-2] = [(prevX,prevY)]
+            prevUS[1] = prevUS[0]
+            prevUS[0] = currentDistance
+            print "distanceDiff > MaxDistance or distnace diff = 0"
+            print prevUS
+            print sensorData
+            return
+        else:
+            correctUS = [prev_us-currentDistance if prev_us>currentDistance else 999 for prev_us in prevUS]
+            distanceDiff = min([i for i in correctUS])
+            pos = [prev_us for prev_us in correctUS].index(distanceDiff)
+
+            if distanceDiff > MAX_DISTANCE_DIFF :
+                sensorData[-2] = [(prevX,prevY)]
+                prevUS[1] = prevUS[0]
+                prevUS[0] = currentDistance
+
+                print "DistnaceDiff from both prev is greater than max Distance"
+                print prevUS
+                print sensorData
+                return
+            prevUS[1] = prevUS[pos]
+            prevUS[0] = currentDistance
     
-    distanceDiff = prevUS - currentDistance
-
-    if abs(distanceDiff) > MAX_DISTANCE_DIFF:
-        sensorData[-2] = [(prevX,prevY)]
-        prevUS = currentDistance
-        return
-
     localX = math.cos(math.radians(currentYaw))*distanceDiff
     localY = math.sin(math.radians(currentYaw))*distanceDiff
 
@@ -204,7 +262,12 @@ def processFromSonar():
     prevY += localY
 
     sensorData[-2] = [(prevX,prevY)]
-    prevUS = currentDistance
+    print "New Points"
+    print prevUS
+    print sensorData
+    prevUS[1] = prevUS[0]
+    prevUS[0] = currentDistance
+
 
 def processFromEncoders():
    pass 
@@ -286,6 +349,7 @@ def drive(command, speed=127, dataLog=True):
     global dataReadFlag
     global dataLogFlag
     global autopilotFlag
+    global autopilotStartTime
     
     dataReadFlag = True
     dataLogFlag = dataLog
@@ -320,6 +384,8 @@ def drive(command, speed=127, dataLog=True):
             autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
             autopilotThread.setDaemon(True)
             autopilotThread.start()
+        
+        autopilotStartTime = time.time()
 
     if command == 'autopilot-sonar-yaw':
         try:
@@ -336,6 +402,7 @@ def autopilot(type='sonar', speed=255):
     global autopilotFlag
     global sensorDataQueue
     global turnFlag
+    global interrupt
 
     lock = threading.Lock()
 
@@ -366,6 +433,7 @@ def autopilot(type='sonar', speed=255):
                     lock.acquire()
                     print sensorData
                     dataProcessor()
+                    sensorDataQueue.put(sensorData)
                     lock.release()
                     
                     time.sleep(.700)
@@ -377,18 +445,22 @@ def autopilot(type='sonar', speed=255):
                     lock.acquire()
                     print sensorData
                     dataProcessor()
+                    sensorDataQueue.put(sensorData)
                     lock.release()
                     
                     writeMotorSpeeds(-speed, speed)
                     time.sleep(.700)
                     writeMotorSpeeds(0, 0)
                     turnFlag = False
-                
-                writeMotorSpeeds(0, 0)
-                while true:
-                    ch = readchar.readchar():
+                while interrupt:
+                    time.sleep(0.5)
+                    writeMotorSpeeds(0, 0)
+                    print "In While"
+                    ch = readchar.readchar()
                     if ch == ' ':
                         break
+                    elif ch == 'q':
+                        interrupt = False
 
             elif type == 'sonar-yaw':
                 obstacleArray = []
