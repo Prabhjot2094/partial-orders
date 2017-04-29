@@ -50,16 +50,16 @@ class Robot():
         self.OBSTACLE_DISTANCE = obstacleDistance
         self.VERBOSE_DATA_REPORTING = verboseDataReporting
         
-    def highByte (number) : return number >> 8
-    def lowByte (number) : return number & 0x00FF
-    def getWord (lowByte, highByte): 
+    def highByte (self, number) : return number >> 8
+    def lowByte (self, number) : return number & 0x00FF
+    def getWord (self, lowByte, highByte): 
         word = ((highByte << 8) | lowByte)
         if word > 32767:
             word -= 65536
 
         return word
 
-    def getFileName():
+    def getFileName(self):
         directory = '../../data/live-data'
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -71,11 +71,11 @@ class Robot():
             else:
                 number += 1
 
-    def getTimestamp():
+    def getTimestamp(self):
         return time.time() - initialtime
 
-    def arduinoDataHandler():
-        global sensorData
+    def arduinoDataHandler(self):
+        sensorData = self.sensorData
 
         try:
             rawData = arduinoBus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
@@ -91,8 +91,8 @@ class Robot():
         except IOError:
             arduinoDataHandler()
 
-    def sensorTileDataHandler():
-        global sensorData
+    def sensorTileDataHandler(self):
+        sensorData = self.sensorData
 
         try:
             sensorTile.flushInput()
@@ -112,11 +112,11 @@ class Robot():
         except:
             sensorTileDataHandler()
 
-    def readSensorData():
-        global sensorData
-        global sensorDataReady
-        global dataReadFlag
-        global dataLogFlag
+    def readSensorData(self):
+        sensorData = self.sensorData
+        sensorDataReady = self.sensorDataReady
+        dataReadFlag = self.dataReadFlag
+        dataLogFlag = self.dataLogFlag
 
         nextDataReadTime = getTimestamp()
 
@@ -147,7 +147,7 @@ class Robot():
                 else:
                     time.sleep(0.01)
 
-    def writeMotorSpeeds(speedLeft, speedRight):
+    def writeMotorSpeeds(self, speedLeft, speedRight):
         try:
             arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(int(speedLeft)), lowByte(int(speedLeft)), highByte(int(speedRight)), lowByte(int(speedRight))])
         except IOError:
@@ -156,7 +156,7 @@ class Robot():
             print "Exception " + str(e)
             shutdown()
 
-    def checkObstacle(sensorData, obstacleArray=[]):
+    def checkObstacle(self, sensorData, obstacleArray=[]):
         obstacleFlag = False
         obstacleSum = 0
         for sensorIndex in range(1, SONAR_NUM + 1):
@@ -170,19 +170,19 @@ class Robot():
         else:
             return 100
 
-    def getSensorData():
-        global sensorDataReady
-        global sensorData
+    def getSensorData(self):
+        sensorDataReady = self.sensorDataReady
+        sensorData = self.sensorData
 
         while not sensorDataReady:
             pass
 
         return sensorData
 
-    def drive(command, speed=127, dataLog=True):
-        global dataReadFlag
-        global dataLogFlag
-        global autopilotFlag
+    def drive(self, command, speed=127, dataLog=True):
+        dataReadFlag = self.dataReadFlag
+        dataLogFlag = self.dataLogFlag
+        autopilotFlag = self.autopilotFlag
         
         dataReadFlag = True
         dataLogFlag = dataLog
@@ -229,7 +229,7 @@ class Robot():
                 autopilotThread.setDaemon(True)
                 autopilotThread.start()
 
-    def shutdown():
+    def shutdown(self):
         print "Shutting Down"
         writeMotorSpeeds(0, 0)
         sys.exit(0)
