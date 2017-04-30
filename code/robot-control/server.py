@@ -29,15 +29,8 @@ def main():
         s.listen(0)
         print 'Socket now listening'
          
-        try:
-            print "Driving"
-            lm.drive("autopilot-sonar",255,False)
-            #dataThread = Thread(target=lm.getData)
-            #dataThread.setDaemon(True)
-            #dataThread.start()
-        except Exception as e:
-            print "Exception in Sensor Data thread, ",e
-            sys.exit(0)
+        print "Driving"
+        lm.drive("autopilot-sonar",255,False)
         
         i=0
         while 1:
@@ -57,6 +50,7 @@ def main():
                 sys.exit(0)
     
     except KeyboardInterrupt:
+        s.close()
         lm.drive('halt')
         
 
