@@ -70,7 +70,6 @@ class Robot():
                 return fileNamePath
             else:
                 number += 1
-        print "getting file name"
 
     def getTimestamp(self):
         return time.time() - self.initialtime

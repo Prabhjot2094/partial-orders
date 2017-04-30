@@ -36,8 +36,6 @@ class LambdaPi(robot.Robot):
                 return
             
             self.referenceYaw = float(self.sensorData[self.YAW_INDEX])
-            print "Ref Yaw"
-            print self.referenceYaw
 
             self.sensorData[-2] = [(0,0)]
             self.prevX = self.prevY = 0
@@ -66,7 +64,6 @@ class LambdaPi(robot.Robot):
             return
 
         currentYaw = float(self.sensorData[self.YAW_INDEX])
-        print currentYaw
         currentYaw = self.getYawReference(currentYaw)
         
         distance = self.ROBOT_SPEED*(time.time()-self.autopilotStartTime)
@@ -88,9 +85,6 @@ class LambdaPi(robot.Robot):
         
         if currentDistance == 0:
             self.sensorData[-2] = [(self.prevX,self.prevY)]
-            print "Distance 0"
-            print self.prevUS
-            print self.sensorData
             return
        
         if distanceDiff > self.MAX_DISTANCE_DIFF or distanceDiff < 0:
@@ -98,9 +92,6 @@ class LambdaPi(robot.Robot):
                 self.sensorData[-2] = [(self.prevX,self.prevY)]
                 self.prevUS[1] = self.prevUS[0]
                 self.prevUS[0] = currentDistance
-                print "distanceDiff > MaxDistance or distnace diff = 0"
-                print self.prevUS
-                print self.sensorData
                 return
             else:
                 correctUS = [prev_us-currentDistance if prev_us>currentDistance else 999 for prev_us in self.prevUS]
@@ -112,9 +103,6 @@ class LambdaPi(robot.Robot):
                     self.prevUS[1] = self.prevUS[0]
                     self.prevUS[0] = currentDistance
 
-                    print "DistnaceDiff from both prev is greater than max Distance"
-                    print self.prevUS
-                    print self.sensorData
                     return
                 self.prevUS[1] = self.prevUS[pos]
                 self.prevUS[0] = currentDistance
@@ -136,9 +124,6 @@ class LambdaPi(robot.Robot):
         self.prevY += localY
 
         self.sensorData[-2] = [(self.prevX,self.prevY)]
-        print "New Points"
-        print self.prevUS
-        print self.sensorData
         self.prevUS[1] = self.prevUS[0]
         self.prevUS[0] = currentDistance
 
@@ -146,11 +131,8 @@ class LambdaPi(robot.Robot):
     def autopilot(self, type='sonar', speed=255):
         lock = threading.Lock()
         while True:
-            print "In Auto"
             if self.autopilotFlag:
-                print "Getting sesore data"
                 self.sensorData = self.getSensorData()
-                print "Got process data"
 
                 if not self.VERBOSE_DATA_REPORTING:
                     self.dataProcessor()
