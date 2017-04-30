@@ -55,9 +55,6 @@ class Robot():
             word -= 65536
 
         return word
-
-    def dataProcessor(self):
-        self.processFromSonar()
     
     def getFileName(self):
         directory = '../../data/live-data'
@@ -203,17 +200,6 @@ class Robot():
                             autopilotThread.start()
                     
                     self.autopilotStartTime = time.time()
-
-            if command == 'autopilot-sonar-yaw':
-                    try:
-                            autopilotThread.join()
-                    
-                    except NameError:
-                            self.autopilotFlag = True
-
-                            autopilotThread = threading.Thread(target=self.autopilot, args=('sonar-yaw', speed))
-                            autopilotThread.setDaemon(True)
-                            autopilotThread.start()
 
     def shutdown(self):
         print "Shutting Down"

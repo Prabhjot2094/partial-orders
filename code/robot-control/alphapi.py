@@ -32,7 +32,10 @@ class AlphaPi(robot.Robot):
 	    currentYaw += 360
 	return currentYaw
 
-    def processFromEncoders(): 
+    def dataProcessor(self):
+        self.processFromEncoders()
+
+    def processFromEncoders(self): 
 	global x_old,y_old,theta_old
 	global dist_per_tick
 
@@ -73,7 +76,7 @@ class AlphaPi(robot.Robot):
 	    self.theta_old = theta_new;
 	    return False
 
-    def afterObstacleEvent(obstacle, speed, lock):
+    def afterObstacleEvent(self, obstacle, speed, lock):
 	# Left
 	if obstacle < 0:
 	    speedLeft = -speed
@@ -85,16 +88,11 @@ class AlphaPi(robot.Robot):
 	    speedRight = -speed
 
 
-	writeMotorSpeeds(-speed,-speed)
-	time.sleep(0.5)
-
-	writeMotorSpeeds(2*speedLeft, 2*speedRight)
-	time.sleep(0.4)
-
-	writeMotorSpeeds(0,0)
+	self.writeMotorSpeeds(speedLeft, speedRight)
+	time.sleep(0.7)
 
 	lock.acquire()
-	dataProcessor()
+	self.dataProcessor()
 	lock.release()
 
 	time.sleep(0.2)
@@ -102,36 +100,35 @@ class AlphaPi(robot.Robot):
  
     def autopilot(self, type='sonar', speed=255):
 	lock = threading.Lock()
-	    while True:
-		if autopilotFlag:
-		    sensorData = getSensorData()
+        while True:
+            if self.autopilotFlag:
+                self.sensorData = self.getSensorData()
 
-		    if not VERBOSE_DATA_REPORTING:
-			dataProcessor()
-			sensorDataQueue.put(sensorData)
+                if not self.VERBOSE_DATA_REPORTING:
+                    self.dataProcessor()
+                    self.sensorDataQueue.put(self.sensorData)
 
-		    if type == 'sonar':
-			writeMotorSpeeds(speed, speed)
+                if type == 'sonar':
+                    self.writeMotorSpeeds(speed, speed)
 
-			obstacle = checkObstacle(sensorData)
+                    obstacle = self.checkObstacle(self.sensorData)
 
-			if obstacle == 100:     # no obstacle
+                    if obstacle == 100:     # no obstacle
+                        self.writeMotorSpeeds(speed, speed)
+                        time.sleep(0.005)
 
-			    writeMotorSpeeds(speed, speed)
-			    time.sleep(0.005)
+                    elif obstacle < 0:      # obstacle towards left
+                        print 'obstacle left'
+                        self.afterObstacleEvent(obstacle, speed, lock)
+                        
+                    elif obstacle >= 0: # Obstacle towards right
+                        print 'obstacle right'
+                        self.afterObstacleEvent(obstacle, speed, lock)
 
-			elif obstacle < 0:      # obstacle towards left
-			    print 'obstacle left'
-			    afterObstacleEvent(obstacle, speed, lock)
-			    
-			elif obstacle >= 0: # Obstacle towards right
-			    print 'obstacle right'
-			    afterObstacleEvent(obstacle, speed, lock)
-
-		else:
-		    self.writeMotorSpeeds(0, 0)
-		    print "Autopilot Stopped"
-		    return
+            else:
+                self.writeMotorSpeeds(0, 0)
+                print "Autopilot Stopped"
+                return
 
 def main():
     alphaPi = AlphaPi()
@@ -148,6 +145,7 @@ def main():
 
 	alphaPi.drive('autopilot-sonar', 255, False)
 	while True:
+	    print alphaPi.sensorData
 	    time.sleep(0.01)
 
     except KeyboardInterrupt:
