@@ -7,7 +7,6 @@ import time
 import threading
 import serial
 import sys
-import PID
 
 class Robot():
 
@@ -16,10 +15,6 @@ class Robot():
     ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
     SENSOR_TILE_DATA_COUNT      = 24
     DATA_READ_INTERVAL          = 50    # milliseconds
-    PID_UPDATE_INTERVAL         = 50
-    YAW_P                       = 1.5
-    YAW_I                       = 0.0
-    YAW_D                       = 0.0
     YAW_INDEX                   = 23
     US_INDEX                    = 3
     MAX_SPEED                   = 255
@@ -29,6 +24,7 @@ class Robot():
     VERBOSE_DATA_REPORTING      = False
     DATA_SOURCE                 = 'sonar'       # sonar or encoders
     SONAR_NUM                   = 5
+    ROBOT_SPEED                 = 10
 
     arduinoBus = smbus.SMBus(1)
     try:
@@ -42,6 +38,7 @@ class Robot():
     dataLogFlag = False
     autopilotFlag = False
     initialtime = 0
+    autopilotStartTime = 0
     sensorDataQueue = Queue()
 
     def __init__(arduinoDataCount = 11, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
@@ -179,55 +176,58 @@ class Robot():
 
         return sensorData
 
-    def drive(self, command, speed=127, dataLog=True):
-        dataReadFlag = self.dataReadFlag
-        dataLogFlag = self.dataLogFlag
-        autopilotFlag = self.autopilotFlag
-        
-        dataReadFlag = True
-        dataLogFlag = dataLog
-        autopilotFlag = False
+	def drive(self,command, speed=127, dataLog=True):
+		dataReadFlag = self.dataReadFlag
+		dataLogFlag = self.dataLogFlag
+		autopilotFlag = self.autopilotFlag
+		autopilotStartTime = self.autopilotStartTime
+		
+		dataReadFlag = True
+		dataLogFlag = dataLog
+		autopilotFlag = False
 
-        if command == 'forward':
-            writeMotorSpeeds(speed, speed)
+		if command == 'forward':
+			writeMotorSpeeds(speed, speed)
 
-        if command == 'backward':
-            writeMotorSpeeds(-speed, -speed)
+		if command == 'backward':
+			writeMotorSpeeds(-speed, -speed)
 
-        if command == 'left':
-            writeMotorSpeeds(0, speed)
+		if command == 'left':
+			writeMotorSpeeds(0, speed)
 
-        if command == 'right':
-            writeMotorSpeeds(speed, 0)
+		if command == 'right':
+			writeMotorSpeeds(speed, 0)
 
-        if command == 'stop':
-            writeMotorSpeeds(0, 0)
+		if command == 'stop':
+			writeMotorSpeeds(0, 0)
 
-        if command == 'halt':
-            writeMotorSpeeds(0, 0)
-            dataReadFlag = False
+		if command == 'halt':
+			writeMotorSpeeds(0, 0)
+			dataReadFlag = False
 
-        if command == 'autopilot-sonar':
-            try:
-                autopilotThread.join()
-            
-            except NameError:
-                autopilotFlag = True
+		if command == 'autopilot-sonar':
+			try:
+				autopilotThread.join()
+			
+			except NameError:
+				autopilotFlag = True
 
-                autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
-                autopilotThread.setDaemon(True)
-                autopilotThread.start()
+				autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
+				autopilotThread.setDaemon(True)
+				autopilotThread.start()
+			
+			autopilotStartTime = time.time()
 
-        if command == 'autopilot-sonar-yaw':
-            try:
-                autopilotThread.join()
-            
-            except NameError:
-                autopilotFlag = True
+		if command == 'autopilot-sonar-yaw':
+			try:
+				autopilotThread.join()
+			
+			except NameError:
+				autopilotFlag = True
 
-                autopilotThread = threading.Thread(target=autopilot, args=('sonar-yaw', speed))
-                autopilotThread.setDaemon(True)
-                autopilotThread.start()
+				autopilotThread = threading.Thread(target=autopilot, args=('sonar-yaw', speed))
+				autopilotThread.setDaemon(True)
+				autopilotThread.start()
 
     def shutdown(self):
         print "Shutting Down"
