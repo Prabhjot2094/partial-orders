@@ -28,7 +28,7 @@ MAX_DISTANCE_DIFF           = 25
 VERBOSE_DATA_REPORTING      = False
 DATA_SOURCE                 = 'sonar'       # sonar or encoders
 SONAR_NUM                   = 5
-ROBOT_SPEED                 = 7.5
+ROBOT_SPEED                 = 10
 
 arduinoBus = smbus.SMBus(1)
 try:
@@ -36,6 +36,7 @@ try:
 except:
     sensorTile = serial.Serial('/dev/ttyACM1', 9600)
 
+sharedSensorDataQueue = Queue()
 sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
 sensorDataReady = False
 dataReadFlag = False
@@ -142,6 +143,16 @@ def sensorTileDataHandler():
     except:
         sensorTileDataHandler()
 
+def getYawReference(currentYaw):
+    global referenceYaw
+
+    currentYaw -= referenceYaw
+    if currentYaw > 180:
+        currentYaw -= 360
+    elif currentYaw < -180:
+        currentYaw += 360
+    return currentYaw
+
 def processFromSonar():
     global sensorData
     global prevX,prevY
@@ -168,13 +179,31 @@ def processFromSonar():
         prevX = prevY = 0
         return
     
+    if turnFlag is True and turningFlag is False:
+        turningFlag = True
+        sensorData[-2] = ["Turn Start"]
+        #print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        #print prevUS
+        #print sensorData
+        return
+
+    elif turnFlag is False and turningFlag is True:
+        turningFlag = False
+        sensorData[-2] = ["Turn End"]
+        prevUS[1] = None
+        prevUS[0] = float(sensorData[US_INDEX])
+        #print "turn = %s, turning = %s"%(turnFlag,turningFlag)
+        #print prevUS
+        #print sensorData
+        #currentYaw = getYawReference(float(sensorData[YAW_INDEX]))
+        #x -= math.cos(math.radians(currentYaw))*ROBOT_SPEED*0.7
+        #y -= math.sin(math.radians(currentYaw))*ROBOT_SPEED*0.7
+        autopilotStartTime = time.time()
+        return
+
     currentYaw = float(sensorData[YAW_INDEX])
-    currentYaw -= referenceYaw
-    if currentYaw > 180:
-        currentYaw -= 360
-    elif currentYaw < -180:
-        currentYaw += 360
-    print "Current Yaw = ",currentYaw
+    print currentYaw
+    currentYaw = getYawReference(currentYaw)
     
     distance = ROBOT_SPEED*(time.time()-autopilotStartTime)
     autopilotStartTime = time.time()
@@ -186,27 +215,8 @@ def processFromSonar():
     y+=localY
     
     sensorData[-1] = [(x,y)]
-   
-    return
-    if turnFlag is True and turningFlag is False:
-        turningFlag = True
-        sensorData[-2] = ["Turn Start"]
-        print "turn = %s, turning = %s"%(turnFlag,turningFlag)
-        print prevUS
-        print sensorData
-        return
-
-    elif turnFlag is False and turningFlag is True:
-        turningFlag = False
-        sensorData[-2] = ["Turn End"]
-        prevUS[1] = None
-        prevUS[0] = float(sensorData[US_INDEX])
-        print "turn = %s, turning = %s"%(turnFlag,turningFlag)
-        print prevUS
-        print sensorData
-        return
-    
-    
+    #print currentYaw
+    #print sensorData[-1]
 
     currentDistance = float(sensorData[US_INDEX])
 
@@ -453,7 +463,6 @@ def autopilot(type='sonar', speed=255):
                     writeMotorSpeeds(0, 0)
                     turnFlag = False
                 while interrupt:
-                    time.sleep(0.5)
                     writeMotorSpeeds(0, 0)
                     print "In While"
                     ch = readchar.readchar()

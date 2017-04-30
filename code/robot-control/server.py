@@ -30,7 +30,7 @@ def main():
         print 'Socket now listening'
          
         print "Driving"
-        lm.drive("autopilot-sonar",0,False)
+        lm.drive("autopilot-sonar",255,False)
         
         i=0
         while 1:
