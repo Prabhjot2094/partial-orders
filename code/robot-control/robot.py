@@ -125,7 +125,7 @@ class Robot():
                         self.sensorData[0] = currentTime
                         self.arduinoDataHandler()
                         self.sensorTileDataHandler()
-                        
+                       
                         if self.VERBOSE_DATA_REPORTING:
                             self.dataProcessor()
                             self.sensorDataQueue.put(self.sensorData)
@@ -148,21 +148,22 @@ class Robot():
             self.shutdown()
 
     def checkObstacle(self, sensorData, obstacleArray=[]):
-        self.obstacleFlag = False
+        obstacleFlag = False
         obstacleSum = 0
         for sensorIndex in range(1, self.SONAR_NUM + 1):
             obstacleArray.append(self.sensorData[sensorIndex]) 
             if self.sensorData[sensorIndex] > 0 and self.sensorData[sensorIndex] < self.OBSTACLE_DISTANCE:
                 obstacleSum += (sensorIndex - (self.SONAR_NUM +1)/2)
-                self.obstacleFlag = True
+                obstacleFlag = True
 
-        if self.obstacleFlag:
+        if obstacleFlag:
             return obstacleSum
         else:
             return 100
 
     def getSensorData(self):
         while not self.sensorDataReady:
+            time.sleep(0.001)
             pass
 
         return self.sensorData

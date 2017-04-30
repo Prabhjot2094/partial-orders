@@ -28,7 +28,6 @@ class LambdaPi(robot.Robot):
         return currentYaw
     
     def processFromSonar(self):
-        print self.sensorData
         if self.prevX is None and self.prevY is None:
             self.prevUS[0] = float(self.sensorData[self.US_INDEX])
             if self.prevUS[0] == 0:
@@ -149,7 +148,9 @@ class LambdaPi(robot.Robot):
         while True:
             print "In Auto"
             if self.autopilotFlag:
+                print "Getting sesore data"
                 self.sensorData = self.getSensorData()
+                print "Got process data"
 
                 if not self.VERBOSE_DATA_REPORTING:
                     self.dataProcessor()
@@ -159,19 +160,14 @@ class LambdaPi(robot.Robot):
                     obstacleArray = []
                     obstacle = self.checkObstacle(self.sensorData, obstacleArray)
                     
-                    print obstacle
                     if obstacle == 100:     # no obstacle
-                        print "Writing motor speed"
                         self.writeMotorSpeeds(speed, speed)
-                        print "motor speeds written"
                         time.sleep(0.01)
                     elif obstacle < 0:      # obstacle towards left
-                        print "Obstacle"
                         self.turnFlag = True
                         self.writeMotorSpeeds(speed, -speed)
                         
                         lock.acquire()
-                        print self.sensorData
                         self.dataProcessor()
                         self.sensorDataQueue.put(self.sensorData)
                         lock.release()
@@ -183,7 +179,6 @@ class LambdaPi(robot.Robot):
                         self.turnFlag = True
                         
                         lock.acquire()
-                        print self.sensorData
                         self.dataProcessor()
                         self.sensorDataQueue.put(self.sensorData)
                         lock.release()
