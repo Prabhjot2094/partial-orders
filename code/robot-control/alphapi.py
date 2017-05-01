@@ -67,59 +67,6 @@ class AlphaPi(robot.Robot):
             self.theta = theta
             return False
 
-    def processFromEncoders2(self): 
-	Dw = 9.2
-
-	if abs(self.sensorData[self.SONAR_NUM + 1]) > 500:
-	    return 
-
-	encoderLeft = self.sensorData[self.SONAR_NUM + 1]
-	encoderRight = -self.sensorData[self.SONAR_NUM + 2]
-
-        self.x  = self.x  + encoderLeft
-        self.y = self.y + encoderRight
-        print self.x, self.y 
-        
-	Dl = encoderLeft * self.dist_per_tick;
-	Dr = encoderRight * self.dist_per_tick;
-	Dc = (Dl + Dr)/2.0;
-
-	theta_inst = (Dr - Dl)/Dw;
-
-	theta_new = self.theta_old + (Dr - Dl)/Dw;
-	x_new = self.x_old + Dc*math.cos(theta_new);
-	y_new = self.y_old + Dc*math.sin(theta_new);
-
-	us2 = self.sensorData[2]
-	wall2_x = x_new + us2*math.cos(theta_new)
-	wall2_y = y_new + us2*math.sin(theta_new)
-
-	if abs(self.x_old - x_new) > 10 or abs(self.y_old - y_new) > 10:
-	    return False
-
-	if (x_new != self.x_old or y_new != self.y_old) and not self.turnFlag:
-	    #print x_new, y_new
-            if (abs(self.us2 - us2) < 20 and us2 > 0 and us2 < 20):
-                #self.sensorData[-1] = [(wall2_x, wall2_y)]
-                self.us2 = us2
-            else:
-                self.us2 = us2
-
-	    self.sensorData[-2] = [(x_new, y_new)]
-
-	    self.x_old = x_new;
-	    self.y_old = y_new;
-	    self.theta_old = theta_new;
-
-	    return True
-
-	else:
-	    self.x_old = x_new;
-	    self.y_old = y_new;
-	    self.theta_old = theta_new;
-
-	    return False
-
     def afterObstacleEvent(self, obstacle, speed, lock):
 	# Left
 	if obstacle < 0:
