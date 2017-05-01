@@ -17,33 +17,57 @@ class AlphaPi(robot.Robot):
     Dw = 9.2
     theta_old = 0
 
-    x = 0.0
-    y = 0.0
-
-    wall2_x_old = 0.0
-    wall2_y_old = 0.0
-
-    us2 = 0
-
-    prevX = prevY = None
     turningFlag = False
     turnFlag = False
     prevUS = None
 
     interrupt = False
 
-    def getYawReference(self, currentYaw):
-	currentYaw -= self.referenceYaw
-	if currentYaw > 180:
-	    currentYaw -= 360
-	elif currentYaw < -180:
-	    currentYaw += 360
-	return currentYaw
-
     def dataProcessor(self):
-        return self.processFromEncoders()
+        return (self.processFromEncoders() or self.processFromSonars())
 
-    def processFromEncoders(self): 
+    def processFromSonars(self):
+        obstaclePos = []
+
+        # TBD
+        # Add formulas to find out wall coordinates for three sensors
+        # Experimentally set a limit for Sonar to start plotting when its close to wall
+
+        for index in range(1, self.SONAR_NUM + 1):
+            if self.sensorData[index] < 20 and self.sensorData[index] > 0:
+                # Left Sonar
+                if index == 1:
+                    obstaclePos.append((1, 2))
+                # Center Sonar
+                elif index == 2:
+                    obstaclePos.append((2, 3))
+                # Right Sonar
+                elif index == 3:
+                    obstaclePos.append((4,5))
+                return True
+            else:
+                return False
+                
+    def processFromEncoders(self):
+        x = sensorData[self.SONAR_NUM + 0]
+        y = sensorData[self.SONAR_NUM + 1]
+        theta = sensorData[self.SONAR_NUM + 2]
+
+        # Plot position if x or y or angle change and robot is not turning
+        if (x != self.x or y != self.y or theta != self.theta) and (not self.turnFlag):
+            sensorData[-2] = [(x, y)]
+            self.x = x
+            self.y = y
+            self.theta = theta
+            return True
+
+        else:
+            self.x = x
+            self.y = y
+            self.theta = theta
+            return False
+
+    def processFromEncoders2(self): 
 	Dw = 9.2
 
 	if abs(self.sensorData[self.SONAR_NUM + 1]) > 500:
@@ -144,8 +168,9 @@ class AlphaPi(robot.Robot):
                 return
 
 def main():
+
     global alphaPi
-    alphaPi = AlphaPi(arduinoDataCount = 5, sonar_num = 3, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = True)
+    alphaPi = AlphaPi(arduinoDataCount = 6, sonar_num = 3, dataReadInterval = 50, obstacleDistance = 15, verboseDataReporting = True)
 
     try:
 	alphaPi.initialtime = time.time()
