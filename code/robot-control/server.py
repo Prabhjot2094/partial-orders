@@ -1,5 +1,5 @@
-import lambdamaster as lm
 import time
+import alphapi as lm
 #import lambdaMasterEMU as lm
 import socket
 import sys
@@ -30,7 +30,8 @@ def main():
         print 'Socket now listening'
          
         print "Driving"
-        lm.drive("autopilot-sonar",255,False)
+        #lm.drive("autopilot-sonar",255,False)
+
         
         i=0
         while 1:
@@ -41,7 +42,7 @@ def main():
            
             try:
                 t=Thread(target = clientThread,args = (conn,))
-                t.setDaemon(True)
+                #t.setDaemon(True)
                 t.start()
             
                 #threadActiveCount += 1
@@ -51,7 +52,7 @@ def main():
     
     except KeyboardInterrupt:
         s.close()
-        lm.drive('halt')
+        lm.alphaPi.drive('halt')
         
 
 def clientThread(conn):
@@ -88,10 +89,12 @@ def clientThread(conn):
         elif str(initCharacter)=="c":
             print "Sending Continuous Data"
             while 1:
-                while int(lm.sensorDataQueue.qsize()) == 0:
+                while int(lm.alphaPi.sensorDataQueue.qsize()) == 0:
                     time.sleep(0.05)
                 
-                data = '@'+str(lm.sensorDataQueue.get())+'@'
+                data_array = lm.alphaPi.sensorDataQueue.get()
+                #print data_array[-2]
+                data = '@'+str(data_array)+'@'
                 conn.send(data)
                 time.sleep(0.05)
         else:
@@ -100,7 +103,7 @@ def clientThread(conn):
     except socket.error as msg:
         threadActiveCount -= 1
         if threadActiveCount is 0:
-            lm.drive('stop')
+            lm.alphaPi.drive('stop')
 
         conn.close()    
         print 'Connect failed. \nError Code : ' + str(msg[0]) + ' \nMessage :' + msg[1]

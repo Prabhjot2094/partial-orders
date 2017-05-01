@@ -19,7 +19,7 @@ class Robot():
     US_INDEX                    = 3
     MAX_SPEED                   = 255
     TURN_ANGLE                  = 45
-    OBSTACLE_DISTANCE           = 10
+    OBSTACLE_DISTANCE           = 25
     MAX_DISTANCE_DIFF           = 25
     VERBOSE_DATA_REPORTING      = False
     DATA_SOURCE                 = 'sonar'       # sonar or encoders
@@ -41,11 +41,12 @@ class Robot():
     autopilotStartTime = 0
     sensorDataQueue = Queue()
 
-    def __init__(self,arduinoDataCount = 11, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
+    def __init__(self,arduinoDataCount = 11, sonar_num = 3, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
         self.ARDUINO_DATA_COUNT = arduinoDataCount
         self.DATA_READ_INTERVAL = dataReadInterval
         self.OBSTACLE_DISTANCE = obstacleDistance
         self.VERBOSE_DATA_REPORTING = verboseDataReporting
+        self.SONAR_NUM = sonar_num
         
     def highByte (self, number) : return number >> 8
     def lowByte (self, number) : return number & 0x00FF
@@ -121,10 +122,10 @@ class Robot():
                         self.sensorData[0] = currentTime
                         self.arduinoDataHandler()
                         self.sensorTileDataHandler()
-                       
+
                         if self.VERBOSE_DATA_REPORTING:
-                            self.dataProcessor()
-                            self.sensorDataQueue.put(self.sensorData)
+                            if self.dataProcessor():
+                                self.sensorDataQueue.put(self.sensorData)
 
                         self.sensorDataReady = True
                         if self.dataLogFlag:
