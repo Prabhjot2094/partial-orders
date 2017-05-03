@@ -7,28 +7,25 @@ import time
 import threading
 import serial
 import sys
-import PID
 
 class Robot():
-
     # configuration variables
     ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
     ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
     SENSOR_TILE_DATA_COUNT      = 24
     DATA_READ_INTERVAL          = 50    # milliseconds
-    PID_UPDATE_INTERVAL         = 50
-    YAW_P                       = 1.5
-    YAW_I                       = 0.0
-    YAW_D                       = 0.0
-    YAW_INDEX                   = 23
+    YAW_INDEX                   = 11
     US_INDEX                    = 3
     MAX_SPEED                   = 255
     TURN_ANGLE                  = 45
-    OBSTACLE_DISTANCE           = 10
+    OBSTACLE_DISTANCE           = 25
     MAX_DISTANCE_DIFF           = 25
     VERBOSE_DATA_REPORTING      = False
     DATA_SOURCE                 = 'sonar'       # sonar or encoders
     SONAR_NUM                   = 5
+    LDR_NUM                     = 0
+    ENCODER_NUM                 = 2
+    ROBOT_SPEED                 = 10
 
     arduinoBus = smbus.SMBus(1)
     try:
@@ -42,13 +39,19 @@ class Robot():
     dataLogFlag = False
     autopilotFlag = False
     initialtime = 0
+    autopilotStartTime = 0
     sensorDataQueue = Queue()
+    leftLastTicks = rightLastTicks = 0
 
-    def __init__(arduinoDataCount = 11, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
+    def __init__(self,arduinoDataCount = 11, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
         self.ARDUINO_DATA_COUNT = arduinoDataCount
         self.DATA_READ_INTERVAL = dataReadInterval
         self.OBSTACLE_DISTANCE = obstacleDistance
         self.VERBOSE_DATA_REPORTING = verboseDataReporting
+        self.SONAR_NUM = sonar_num
+        self.LDR_NUM = ldr_num
+        self.ENCODER_NUM = encoder_num
+        self.YAW_INDEX = 1 + self.ARDUINO_DATA_COUNT + 11
         
     def highByte (self, number) : return number >> 8
     def lowByte (self, number) : return number & 0x00FF
@@ -56,9 +59,18 @@ class Robot():
         word = ((highByte << 8) | lowByte)
         if word > 32767:
             word -= 65536
-
         return word
 
+    def getDoubleWord(self, bytesList):
+        doubleWord = 0
+        for byte in bytesList:
+            doubleWord = ((doubleWord << 8) | byte)
+
+        if doubleWord > 2147483647:
+            doubleWord -= 4294967296
+
+        return doubleWord
+    
     def getFileName(self):
         directory = '../../data/live-data'
         if not os.path.exists(directory):
@@ -72,76 +84,75 @@ class Robot():
                 number += 1
 
     def getTimestamp(self):
-        return time.time() - initialtime
+        return time.time() - self.initialtime
 
     def arduinoDataHandler(self):
-        sensorData = self.sensorData
-
         try:
-            rawData = arduinoBus.read_i2c_block_data(ARDUINO_ADDRESS, 0)
+            rawData = self.arduinoBus.read_i2c_block_data(self.ARDUINO_ADDRESS, 0)
 
             if (len(rawData) != 32):
-                readSensorData()
+                self.readSensorData()
 
-            for sensorIndex in range(1, ARDUINO_DATA_COUNT + 1):
-                sensorData[sensorIndex] = getWord(rawData[2*(sensorIndex-1) + 1], rawData[2*(sensorIndex-1) + 0])
-                if sensorData[sensorIndex] > 1023:
-                    arduinoDataHandler()
+            for sensorIndex in range(1, self.SONAR_NUM + self.LDR_NUM + 1):
+                self.sensorData[sensorIndex] = self.getWord(rawData[2*(sensorIndex-1) + 1], rawData[2*(sensorIndex-1) + 0])
+                if self.sensorData[sensorIndex] > 200:
+                    self.arduinoDataHandler()
+
+            self.sensorData[4] = self.getDoubleWord([rawData[6], rawData[7], rawData[8], rawData[9]])
+            self.sensorData[5] = self.getDoubleWord([rawData[10], rawData[11], rawData[12], rawData[13]])
+
+            if (abs(self.sensorData[4] - self.leftLastTicks) > 1000) or (abs(self.sensorData[5] - self.rightLastTicks) > 1000):
+                self.arduinoDataHandler()
+            else:
+                self.leftLastTicks = self.sensorData[4]
+                self.rightLastTicks = self.sensorData[5]
 
         except IOError:
-            arduinoDataHandler()
+            self.arduinoDataHandler()
 
     def sensorTileDataHandler(self):
-        sensorData = self.sensorData
-
         try:
-            sensorTile.flushInput()
+            self.sensorTile.flushInput()
 
             while True:
-                rawData = sensorTile.readline().split(', ')
+                rawData = self.sensorTile.readline().split(', ')
                 if len(rawData) == 24:
-                    for sensorIndex in range(0, SENSOR_TILE_DATA_COUNT):
+                    for sensorIndex in range(0, self.SENSOR_TILE_DATA_COUNT):
                         if sensorIndex < 11:
-                            sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = int(rawData[sensorIndex])
+                            self.sensorData[(1 + self.ARDUINO_DATA_COUNT) + sensorIndex] = int(rawData[sensorIndex])
                         else:
-                            sensorData[(1 + ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
+                            self.sensorData[(1 + self.ARDUINO_DATA_COUNT) + sensorIndex] = float(rawData[sensorIndex])
                     break
 
                 else:
                     continue
         except:
-            sensorTileDataHandler()
+            self.sensorTileDataHandler()
 
     def readSensorData(self):
-        sensorData = self.sensorData
-        sensorDataReady = self.sensorDataReady
-        dataReadFlag = self.dataReadFlag
-        dataLogFlag = self.dataLogFlag
+        nextDataReadTime = self.getTimestamp()
 
-        nextDataReadTime = getTimestamp()
-
-        with open(getFileName(), 'wb') as rawfile:
+        with open(self.getFileName(), 'wb') as rawfile:
             csvfile = csv.writer(rawfile, delimiter=',') 
             while True:
-                if dataReadFlag:
-                    currentTime = getTimestamp()
+                if self.dataReadFlag:
+                    currentTime = self.getTimestamp()
                     if currentTime >= nextDataReadTime:
-                        sensorDataReady = False
+                        self.sensorDataReady = False
 
-                        nextDataReadTime += DATA_READ_INTERVAL/1000.0
+                        nextDataReadTime += self.DATA_READ_INTERVAL/1000.0
                         
-                        sensorData[0] = currentTime
-                        arduinoDataHandler()
-                        sensorTileDataHandler()
-                        
-                        if VERBOSE_DATA_REPORTING:
-                            dataProcessor()
-                            sensorDataQueue.put(sensorData)
+                        self.sensorData[0] = currentTime
+                        self.arduinoDataHandler()
+                        self.sensorTileDataHandler()
 
-                        sensorDataReady = True
+                        if self.VERBOSE_DATA_REPORTING:
+                            if self.dataProcessor():
+                                self.sensorDataQueue.put(self.sensorData)
 
-                        if dataLogFlag:
-                            csvfile.writerow(sensorData)
+                        self.sensorDataReady = True
+                        if self.dataLogFlag:
+                            csvfile.writerow(self.sensorData)
                         time.sleep(0.01)
 
                 else:
@@ -149,20 +160,20 @@ class Robot():
 
     def writeMotorSpeeds(self, speedLeft, speedRight):
         try:
-            arduinoBus.write_block_data(ARDUINO_ADDRESS, 0, [highByte(int(speedLeft)), lowByte(int(speedLeft)), highByte(int(speedRight)), lowByte(int(speedRight))])
+            self.arduinoBus.write_block_data(self.ARDUINO_ADDRESS, 0, [self.highByte(int(speedLeft)), self.lowByte(int(speedLeft)), self.highByte(int(speedRight)), self.lowByte(int(speedRight))])
         except IOError:
-            writeMotorSpeeds(speedLeft, speedRight)
+            self.writeMotorSpeeds(speedLeft, speedRight)
         except Exception as e:
             print "Exception " + str(e)
-            shutdown()
+            self.shutdown()
 
     def checkObstacle(self, sensorData, obstacleArray=[]):
         obstacleFlag = False
         obstacleSum = 0
-        for sensorIndex in range(1, SONAR_NUM + 1):
-            obstacleArray.append(sensorData[sensorIndex]) 
-            if sensorData[sensorIndex] > 0 and sensorData[sensorIndex] < OBSTACLE_DISTANCE:
-                obstacleSum += (sensorIndex - (SONAR_NUM +1)/2)
+        for sensorIndex in range(1, self.SONAR_NUM + 1):
+            obstacleArray.append(self.sensorData[sensorIndex]) 
+            if self.sensorData[sensorIndex] > 0 and self.sensorData[sensorIndex] < self.OBSTACLE_DISTANCE:
+                obstacleSum += (sensorIndex - (self.SONAR_NUM +1)/2)
                 obstacleFlag = True
 
         if obstacleFlag:
@@ -171,65 +182,53 @@ class Robot():
             return 100
 
     def getSensorData(self):
-        sensorDataReady = self.sensorDataReady
-        sensorData = self.sensorData
-
-        while not sensorDataReady:
+        while not self.sensorDataReady:
+            time.sleep(0.001)
             pass
 
-        return sensorData
+        return self.sensorData
 
-    def drive(self, command, speed=127, dataLog=True):
-        dataReadFlag = self.dataReadFlag
-        dataLogFlag = self.dataLogFlag
-        autopilotFlag = self.autopilotFlag
-        
-        dataReadFlag = True
-        dataLogFlag = dataLog
-        autopilotFlag = False
+    def drive(self,command, speed=127, dataLog=True):
+            self.dataReadFlag = True
+            self.dataLogFlag = dataLog
+            self.autopilotFlag = False
 
-        if command == 'forward':
-            writeMotorSpeeds(speed, speed)
+            if command == 'forward':
+                    self.writeMotorSpeeds(speed, speed)
 
-        if command == 'backward':
-            writeMotorSpeeds(-speed, -speed)
+            if command == 'backward':
+                    self.writeMotorSpeeds(-speed, -speed)
 
-        if command == 'left':
-            writeMotorSpeeds(0, speed)
+            if command == 'left':
+                    self.writeMotorSpeeds(0, speed)
 
-        if command == 'right':
-            writeMotorSpeeds(speed, 0)
+            if command == 'right':
+                    self.writeMotorSpeeds(speed, 0)
 
-        if command == 'stop':
-            writeMotorSpeeds(0, 0)
+            if command == 'circle':
+                    self.writeMotorSpeeds(speed, speed/2);
 
-        if command == 'halt':
-            writeMotorSpeeds(0, 0)
-            dataReadFlag = False
+            if command == 'stop':
+                    self.writeMotorSpeeds(0, 0)
 
-        if command == 'autopilot-sonar':
-            try:
-                autopilotThread.join()
-            
-            except NameError:
-                autopilotFlag = True
+            if command == 'halt':
+                    self.writeMotorSpeeds(0, 0)
+                    self.dataReadFlag = False
 
-                autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
-                autopilotThread.setDaemon(True)
-                autopilotThread.start()
-
-        if command == 'autopilot-sonar-yaw':
-            try:
-                autopilotThread.join()
-            
-            except NameError:
-                autopilotFlag = True
-
-                autopilotThread = threading.Thread(target=autopilot, args=('sonar-yaw', speed))
-                autopilotThread.setDaemon(True)
-                autopilotThread.start()
+            if command == 'autopilot-sonar':
+                    try:
+                            autopilotThread.join()
+                    
+                    except NameError:
+                            self.autopilotFlag = True
+                            
+                            autopilotThread = threading.Thread(target=self.autopilot, args=('sonar', speed))
+                            autopilotThread.setDaemon(True)
+                            autopilotThread.start()
+                    
+                    self.autopilotStartTime = time.time()
 
     def shutdown(self):
         print "Shutting Down"
-        writeMotorSpeeds(0, 0)
+        self.writeMotorSpeeds(0, 0)
         sys.exit(0)

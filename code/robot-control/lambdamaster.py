@@ -77,9 +77,9 @@ def main():
             print "Exception in dataReadThread " + str(e)
             shutdown()
 
-        #drive('autopilot-sonar', 255, False)
-        #while True:
-        #    time.sleep(0.01)
+        drive('autopilot-sonar', 255, False)
+        while True:
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         shutdown()
@@ -392,6 +392,7 @@ def drive(command, speed=127, dataLog=True):
         except NameError:
             autopilotFlag = True
 
+            print "Autopilot Thread Started"
             autopilotThread = threading.Thread(target=autopilot, args=('sonar', speed))
             autopilotThread.setDaemon(True)
             autopilotThread.start()
@@ -434,10 +435,12 @@ def autopilot(type='sonar', speed=255):
                 obstacleArray = []
                 obstacle = checkObstacle(sensorData, obstacleArray)
                 
+                print obstacle
                 if obstacle == 100:     # no obstacle
                     writeMotorSpeeds(speed, speed)
                     time.sleep(0.01)
                 elif obstacle < 0:      # obstacle towards left
+                    print "Obstacle"
                     turnFlag = True
                     writeMotorSpeeds(speed, -speed)
                     
