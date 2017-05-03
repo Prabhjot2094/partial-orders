@@ -1,41 +1,67 @@
+/* Includes ------------------------------------------------------------------*/
+#include "config.h"
 #include <Wire.h>
 #include <Motor.h>
-#include <NewPing.h>
-#include "config.h"
 
+#ifdef _SONAR
+#include <NewPing.h>
+#endif
+
+#ifdef _ENCODER
+#include <Encoder.h>
+#endif
+
+/* Private Defines -----------------------------------------------------------*/
+#define TOTAL_DATA_BYTES    (((SONAR_NUM + LDR_NUM) * 2) + (ENCODER_NUM * 4) + 2)
+
+/* Function Defines ----------------------------------------------------------*/
 #define HIGHBYTE(word) (word >> 8)
 #define LOWBYTE(word) (word & 0x00FF)
-
-int speedLeft = 0;
-int speedRight = 0;
-unsigned int cmd;
-
-motor motorLeft, motorRight;
-
-unsigned long pingTimer[SONAR_NUM];     // when each pings
-unsigned int sonarData[SONAR_NUM];      // where the ping distances are stored
-unsigned int ldrData[LDR_NUM];
-uint8_t sensorDataInBytes[(SONAR_NUM + LDR_NUM) * 2];
-uint8_t currentSensor = 0; // Which sensor is active.
-
-NewPing sonar[SONAR_NUM] = {        // sensor object array
-    NewPing(SONAR_FAR_LEFT_TRIG, SONAR_FAR_LEFT_ECHO, MAX_DISTANCE),   // each sensor's trigger pin, echo pin, and max distance to ping
-    NewPing(SONAR_LEFT_TRIG, SONAR_LEFT_ECHO, MAX_DISTANCE),
-    NewPing(SONAR_CENTRE_TRIG, SONAR_CENTRE_ECHO, MAX_DISTANCE),
-    NewPing(SONAR_RIGHT_TRIG, SONAR_RIGHT_ECHO, MAX_DISTANCE),
-    NewPing(SONAR_FAR_RIGHT_TRIG, SONAR_FAR_RIGHT_ECHO, MAX_DISTANCE)
-};
 
 inline int getWord(short lowByte, short highByte)
 {
     return ((highByte << 8) | lowByte);
 }
 
+/* Global Variables ----------------------------------------------------------*/
+uint8_t sensorDataInBytes[TOTAL_DATA_BYTES];
+int speedLeft = 0;
+int speedRight = 0;
+unsigned int cmd;
+motor motorLeft, motorRight;
+
+/* Sonar Initialization ------------------------------------------------------*/
+#ifdef _SONAR
+unsigned long pingTimer[SONAR_NUM];     // when each pings
+unsigned int sonarData[SONAR_NUM];      // where the ping distances are stored
+uint8_t currentSensor = 0; // Which sensor is active.
+
+NewPing sonar[SONAR_NUM] = {        // sensor object array
+    // each sensor's trigger pin, echo pin, and max distance to ping
+    NewPing(SONAR_LEFT_TRIG, SONAR_LEFT_ECHO, MAX_DISTANCE),
+    NewPing(SONAR_CENTRE_TRIG, SONAR_CENTRE_ECHO, MAX_DISTANCE),
+    NewPing(SONAR_RIGHT_TRIG, SONAR_RIGHT_ECHO, MAX_DISTANCE)
+};
+#endif
+
+/* Encoder Initialization ----------------------------------------------------*/
+#ifdef _ENCODER
+union EncoderTicks {
+    int32_t ticks;
+    uint8_t ticksInBytes[4];
+} leftEncoderTicks, rightEncoderTicks;
+
+Encoder leftEncoder(ENCODER_LEFT_A, ENCODER_LEFT_B);
+Encoder rightEncoder(ENCODER_RIGHT_A, ENCODER_RIGHT_B);
+#endif
+
+/* Setup ---------------------------------------------------------------------*/
 void setup()
 {
     #ifdef SERIAL_DEBUGGING
     Serial.begin(9600);
     #endif
+
     // initialize i2c as slave
     Wire.begin(SLAVE_ADDRESS);
 
@@ -54,21 +80,27 @@ void setup()
     motorRight.initialise();
 
     // LDR setup
+    #ifdef _LDR
     pinMode(LDR_0, INPUT);
     pinMode(LDR_1, INPUT);
     pinMode(LDR_2, INPUT);
     pinMode(LDR_3, INPUT);
     pinMode(LDR_4, INPUT);
     pinMode(LDR_5, INPUT);
+    #endif
 
     // ultrasonic setup
+    #ifdef _SONAR
     pingTimer[0] = millis() + 75; // First ping start in ms.
     for (uint8_t i = 1; i < SONAR_NUM; i++)
         pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
+    #endif
 }
 
+/* Main Loop -----------------------------------------------------------------*/
 void loop()
 {
+    #ifdef _SONAR
     for (uint8_t i = 0; i < SONAR_NUM; i++)
     {
         if (millis() >= pingTimer[i])
@@ -84,23 +116,29 @@ void loop()
             sonar[currentSensor].ping_timer(echoCheck);
         }
     }
+    #endif
 }
 
-void echoCheck() // If ping echo, set distance to array.
+/* Sonar Functions -----------------------------------------------------------*/
+#ifdef _SONAR
+void echoCheck() // if ping echo, set distance to array.
 { 
   if (sonar[currentSensor].check_timer())
     sonarData[currentSensor] = sonar[currentSensor].ping_result / US_ROUNDTRIP_CM;
 }
 
 void oneSensorCycle() // split all sonar data into bytes
-{ 
+{   
     for (uint8_t sensorIndex = 0; sensorIndex < SONAR_NUM; sensorIndex++)
     {
         sensorDataInBytes[sensorIndex*2 + 0] = HIGHBYTE(sonarData[sensorIndex]);
         sensorDataInBytes[sensorIndex*2 + 1] = LOWBYTE(sonarData[sensorIndex]);
     }
 }
+#endif
 
+/* LDR Functions -------------------------------------------------------------*/
+#ifdef _LDR
 void fetchLDRData()
 {
     // fetch LDR values
@@ -117,7 +155,24 @@ void fetchLDRData()
         sensorDataInBytes[(SONAR_NUM + sensorIndex)*2 + 1] = LOWBYTE(ldrData[sensorIndex]);
     }
 }
+#endif
 
+/* Encoder Functions ---------------------------------------------------------*/
+#ifdef _ENCODER
+void fetchEncoderValues()
+{
+    leftEncoderTicks.ticks = leftEncoder.read();
+    rightEncoderTicks.ticks = rightEncoder.read();
+
+    for (uint8_t byteIndex = 0; byteIndex < 4; byteIndex++)
+    {
+        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + byteIndex] = leftEncoderTicks.ticksInBytes[byteIndex];
+        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + 4 + byteIndex] = rightEncoderTicks.ticksInBytes[byteIndex];
+    }
+}
+#endif
+
+/* i2c Callbacks -------------------------------------------------------------*/
 // callback for received data
 void receiveData(int byteCount)
 {
@@ -136,15 +191,21 @@ void receiveData(int byteCount)
                     speedLeft = getWord(Wire.read(), Wire.read());      // remember C++ order of evaluation
                     speedRight = getWord(Wire.read(), Wire.read());
 
-                    motorLeft.write(speedLeft);
-                    motorRight.write(speedRight);
-
+                    if (speedLeft == -1000 && speedRight == -1000)
+                    {
+                        leftEncoder.write(0);
+                        rightEncoder.write(0);
+                    }
+                    else
+                    {
+                        motorLeft.write(speedLeft);
+                        motorRight.write(speedRight);
+                    }
+                    
                     #ifdef SERIAL_DEBUGGING
-                    
                     Serial.print(speedLeft);
-                    Srial.print(" ");
+                    Serial.print(" ");
                     Serial.println(speedRight);
-                    
                     #endif
                 }
             }
@@ -160,9 +221,17 @@ void receiveData(int byteCount)
     }
 }
 
+
 // callback for sending data
 void sendData()
 {
-    fetchLDRData();
-    Wire.write(sensorDataInBytes, (SONAR_NUM + LDR_NUM)*2);
+    #ifdef _LDR
+    fetchLDRValues();
+    #endif
+
+    #ifdef _ENCODER
+    fetchEncoderValues();
+    #endif
+
+    Wire.write(sensorDataInBytes, TOTAL_DATA_BYTES);
 }

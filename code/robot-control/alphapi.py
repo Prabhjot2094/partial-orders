@@ -8,14 +8,17 @@ import threading
 import serial
 import sys
 import robot
+import random
 
 class AlphaPi(robot.Robot):
-
-    x_old = 0.0
-    y_old = 0.0
+    x = 0.0
+    y = 0.0
     dist_per_tick = 0.003745
-    Dw = 9.2
-    theta_old = 0
+    Dw = 8.9
+    theta = 0
+    leftEncoderTicks = 0
+    rightEncoderTicks = 0
+    lastX = lastY = 0.0
 
     turningFlag = False
     turnFlag = False
@@ -49,76 +52,31 @@ class AlphaPi(robot.Robot):
                 return False
                 
     def processFromEncoders(self):
-        x = sensorData[self.SONAR_NUM + 0]
-        y = sensorData[self.SONAR_NUM + 1]
-        theta = sensorData[self.SONAR_NUM + 2]
+        if self.leftEncoderTicks != self.sensorData[4] or self.rightEncoderTicks != self.sensorData[5]:
+            deltaLeft = self.sensorData[4] - self.leftEncoderTicks
+            deltaRight = self.sensorData[5] - self.rightEncoderTicks
 
-        # Plot position if x or y or angle change and robot is not turning
-        if (x != self.x or y != self.y or theta != self.theta) and (not self.turnFlag):
-            sensorData[-2] = [(x, y)]
-            self.x = x
-            self.y = y
-            self.theta = theta
-            return True
+            Dl = deltaLeft * self.dist_per_tick
+            Dr = -1 * deltaRight * self.dist_per_tick 
+            Dc = (Dl + Dr)/2
+            
+            self.theta = self.theta + (Dr - Dl)/self.Dw
+            self.x = self.x + Dc * math.cos(self.theta)
+            self.y = self.y + Dc * math.sin(self.theta)
+            
+            self.leftEncoderTicks = self.sensorData[4]
+            self.rightEncoderTicks = self.sensorData[5]
 
-        else:
-            self.x = x
-            self.y = y
-            self.theta = theta
-            return False
+            self.sensorData[-2] = [(self.x, self.y)]
 
-    def processFromEncoders2(self): 
-	Dw = 9.2
-
-	if abs(self.sensorData[self.SONAR_NUM + 1]) > 500:
-	    return 
-
-	encoderLeft = self.sensorData[self.SONAR_NUM + 1]
-	encoderRight = -self.sensorData[self.SONAR_NUM + 2]
-
-        self.x  = self.x  + encoderLeft
-        self.y = self.y + encoderRight
-        print self.x, self.y 
-        
-	Dl = encoderLeft * self.dist_per_tick;
-	Dr = encoderRight * self.dist_per_tick;
-	Dc = (Dl + Dr)/2.0;
-
-	theta_inst = (Dr - Dl)/Dw;
-
-	theta_new = self.theta_old + (Dr - Dl)/Dw;
-	x_new = self.x_old + Dc*math.cos(theta_new);
-	y_new = self.y_old + Dc*math.sin(theta_new);
-
-	us2 = self.sensorData[2]
-	wall2_x = x_new + us2*math.cos(theta_new)
-	wall2_y = y_new + us2*math.sin(theta_new)
-
-	if abs(self.x_old - x_new) > 10 or abs(self.y_old - y_new) > 10:
-	    return False
-
-	if (x_new != self.x_old or y_new != self.y_old) and not self.turnFlag:
-	    #print x_new, y_new
-            if (abs(self.us2 - us2) < 20 and us2 > 0 and us2 < 20):
-                #self.sensorData[-1] = [(wall2_x, wall2_y)]
-                self.us2 = us2
+            if abs(self.lastX - self.x) > 1 or abs(self.lastY - self.y) > 1:
+                self.lastX = self.x
+                self.lastY = self.y
+                return True
             else:
-                self.us2 = us2
-
-	    self.sensorData[-2] = [(x_new, y_new)]
-
-	    self.x_old = x_new;
-	    self.y_old = y_new;
-	    self.theta_old = theta_new;
-
-	    return True
-
-	else:
-	    self.x_old = x_new;
-	    self.y_old = y_new;
-	    self.theta_old = theta_new;
-
-	    return False
+                return False
+        else: 
+            return False
 
     def afterObstacleEvent(self, obstacle, speed, lock):
 	# Left
@@ -132,10 +90,11 @@ class AlphaPi(robot.Robot):
 	    speedRight = -speed
 	self.turnFlag = True
 
-	self.writeMotorSpeeds(0, 0)
-	time.sleep(0.1)
+	#self.writeMotorSpeeds(0, 0)
+	#time.sleep(0.1)
 	self.writeMotorSpeeds(speedLeft, speedRight)
-	time.sleep(1)
+	
+	time.sleep(0.1 + 0.9*random.random())
 
 	self.turnFlag = False
 
@@ -146,8 +105,6 @@ class AlphaPi(robot.Robot):
                 self.sensorData = self.getSensorData()
 
                 if type == 'sonar':
-                    self.writeMotorSpeeds(speed, speed)
-
                     obstacle = self.checkObstacle(self.sensorData)
 
                     if obstacle == 100:     # no obstacle
@@ -155,11 +112,9 @@ class AlphaPi(robot.Robot):
                         time.sleep(0.005)
 
                     elif obstacle < 0:      # obstacle towards left
-                        print 'obstacle left'
                         self.afterObstacleEvent(obstacle, speed, lock)
                         
                     elif obstacle >= 0: # Obstacle towards right
-                        print 'obstacle right'
                         self.afterObstacleEvent(obstacle, speed, lock)
 
             else:
@@ -168,23 +123,23 @@ class AlphaPi(robot.Robot):
                 return
 
 def main():
-
     global alphaPi
-    alphaPi = AlphaPi(arduinoDataCount = 6, sonar_num = 3, dataReadInterval = 50, obstacleDistance = 15, verboseDataReporting = True)
+    alphaPi = AlphaPi(arduinoDataCount = 5, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 12, verboseDataReporting = True)
 
     try:
 	alphaPi.initialtime = time.time()
 
 	try:
 	    # Reset Encoders
-	    alphaPi.writeMotorSpeeds(-100, -100)
+	    alphaPi.writeMotorSpeeds(-1000, -1000)
 	    dataReadThread = threading.Thread(target=alphaPi.readSensorData)
 
 	    dataReadThread.setDaemon(True)
 	    dataReadThread.start()
+
 	except Exception as e:
 	    print "Exception in dataReadThread " + str(e)
-	    lambdaPi.shutdown()
+	    alphaPi.shutdown()
 
 	alphaPi.drive('autopilot-sonar', 255, True)
 

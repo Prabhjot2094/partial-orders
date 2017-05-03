@@ -9,13 +9,12 @@ import serial
 import sys
 
 class Robot():
-
     # configuration variables
     ARDUINO_ADDRESS             = 0x04  # i2c address for arduino
     ARDUINO_DATA_COUNT          = 11    # no of sensors on arduino
     SENSOR_TILE_DATA_COUNT      = 24
     DATA_READ_INTERVAL          = 50    # milliseconds
-    YAW_INDEX                   = 23
+    YAW_INDEX                   = 11
     US_INDEX                    = 3
     MAX_SPEED                   = 255
     TURN_ANGLE                  = 45
@@ -24,6 +23,8 @@ class Robot():
     VERBOSE_DATA_REPORTING      = False
     DATA_SOURCE                 = 'sonar'       # sonar or encoders
     SONAR_NUM                   = 5
+    LDR_NUM                     = 0
+    ENCODER_NUM                 = 2
     ROBOT_SPEED                 = 10
 
     arduinoBus = smbus.SMBus(1)
@@ -40,13 +41,17 @@ class Robot():
     initialtime = 0
     autopilotStartTime = 0
     sensorDataQueue = Queue()
+    leftLastTicks = rightLastTicks = 0
 
-    def __init__(self,arduinoDataCount = 11, sonar_num = 3, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
+    def __init__(self,arduinoDataCount = 11, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
         self.ARDUINO_DATA_COUNT = arduinoDataCount
         self.DATA_READ_INTERVAL = dataReadInterval
         self.OBSTACLE_DISTANCE = obstacleDistance
         self.VERBOSE_DATA_REPORTING = verboseDataReporting
         self.SONAR_NUM = sonar_num
+        self.LDR_NUM = ldr_num
+        self.ENCODER_NUM = encoder_num
+        self.YAW_INDEX = 1 + self.ARDUINO_DATA_COUNT + 11
         
     def highByte (self, number) : return number >> 8
     def lowByte (self, number) : return number & 0x00FF
@@ -54,8 +59,17 @@ class Robot():
         word = ((highByte << 8) | lowByte)
         if word > 32767:
             word -= 65536
-
         return word
+
+    def getDoubleWord(self, bytesList):
+        doubleWord = 0
+        for byte in bytesList:
+            doubleWord = ((doubleWord << 8) | byte)
+
+        if doubleWord > 2147483647:
+            doubleWord -= 4294967296
+
+        return doubleWord
     
     def getFileName(self):
         directory = '../../data/live-data'
@@ -79,10 +93,19 @@ class Robot():
             if (len(rawData) != 32):
                 self.readSensorData()
 
-            for sensorIndex in range(1, self.ARDUINO_DATA_COUNT + 1):
+            for sensorIndex in range(1, self.SONAR_NUM + self.LDR_NUM + 1):
                 self.sensorData[sensorIndex] = self.getWord(rawData[2*(sensorIndex-1) + 1], rawData[2*(sensorIndex-1) + 0])
-                if self.sensorData[sensorIndex] > 1023:
+                if self.sensorData[sensorIndex] > 200:
                     self.arduinoDataHandler()
+
+            self.sensorData[4] = self.getDoubleWord([rawData[6], rawData[7], rawData[8], rawData[9]])
+            self.sensorData[5] = self.getDoubleWord([rawData[10], rawData[11], rawData[12], rawData[13]])
+
+            if (abs(self.sensorData[4] - self.leftLastTicks) > 1000) or (abs(self.sensorData[5] - self.rightLastTicks) > 1000):
+                self.arduinoDataHandler()
+            else:
+                self.leftLastTicks = self.sensorData[4]
+                self.rightLastTicks = self.sensorData[5]
 
         except IOError:
             self.arduinoDataHandler()
@@ -181,6 +204,9 @@ class Robot():
 
             if command == 'right':
                     self.writeMotorSpeeds(speed, 0)
+
+            if command == 'circle':
+                    self.writeMotorSpeeds(speed, speed/2);
 
             if command == 'stop':
                     self.writeMotorSpeeds(0, 0)
