@@ -1,5 +1,5 @@
 /* Debugging -----------------------------------------------------------------*/
-#define SERIAL_DEBUGGING
+//#define SERIAL_DEBUGGING
 
 // I2C Settings
 #define SLAVE_ADDRESS           0x04

@@ -12,7 +12,7 @@
 #endif
 
 /* Private Defines -----------------------------------------------------------*/
-#define TOTAL_DATA_BYTES    (((SONAR_NUM + LDR_NUM) * 2) + (ENCODER_NUM * 4) + 2)
+#define TOTAL_DATA_BYTES    (((SONAR_NUM + LDR_NUM) * 2) + (ENCODER_NUM * 4))
 
 /* Function Defines ----------------------------------------------------------*/
 #define HIGHBYTE(word) (word >> 8)
@@ -117,14 +117,19 @@ void loop()
         }
     }
     #endif
+
+    #ifdef _ENCODER
+    leftEncoderTicks.ticks = leftEncoder.read();
+    rightEncoderTicks.ticks = rightEncoder.read();
+    #endif
 }
 
 /* Sonar Functions -----------------------------------------------------------*/
 #ifdef _SONAR
 void echoCheck() // if ping echo, set distance to array.
 { 
-  if (sonar[currentSensor].check_timer())
-    sonarData[currentSensor] = sonar[currentSensor].ping_result / US_ROUNDTRIP_CM;
+    if (sonar[currentSensor].check_timer())
+        sonarData[currentSensor] = sonar[currentSensor].ping_result / US_ROUNDTRIP_CM;
 }
 
 void oneSensorCycle() // split all sonar data into bytes
@@ -161,13 +166,10 @@ void fetchLDRData()
 #ifdef _ENCODER
 void fetchEncoderValues()
 {
-    leftEncoderTicks.ticks = leftEncoder.read();
-    rightEncoderTicks.ticks = rightEncoder.read();
-
     for (uint8_t byteIndex = 0; byteIndex < 4; byteIndex++)
     {
-        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + byteIndex] = leftEncoderTicks.ticksInBytes[byteIndex];
-        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + 4 + byteIndex] = rightEncoderTicks.ticksInBytes[byteIndex];
+        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + byteIndex] = leftEncoderTicks.ticksInBytes[3 - byteIndex];
+        sensorDataInBytes[(SONAR_NUM + LDR_NUM)*2 + 4 + byteIndex] = rightEncoderTicks.ticksInBytes[3 - byteIndex];
     }
 }
 #endif
@@ -221,7 +223,6 @@ void receiveData(int byteCount)
     }
 }
 
-
 // callback for sending data
 void sendData()
 {
@@ -232,6 +233,6 @@ void sendData()
     #ifdef _ENCODER
     fetchEncoderValues();
     #endif
-
+    
     Wire.write(sensorDataInBytes, TOTAL_DATA_BYTES);
 }
