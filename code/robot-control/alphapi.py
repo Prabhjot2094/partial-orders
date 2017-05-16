@@ -13,8 +13,11 @@ import random
 class AlphaPi(robot.Robot):
     x = 0.0
     y = 0.0
-    dist_per_tick = 0.003745
-    Dw = 8.9
+    dpt_left = 0.00294002
+    dpt_right = dpt_left
+    Dw = 9.38
+    Dl = 0
+    Dr = 0
     theta = 0
     leftEncoderTicks = 0
     rightEncoderTicks = 0
@@ -56,18 +59,23 @@ class AlphaPi(robot.Robot):
             deltaLeft = self.sensorData[4] - self.leftEncoderTicks
             deltaRight = self.sensorData[5] - self.rightEncoderTicks
 
-            Dl = deltaLeft * self.dist_per_tick
-            Dr = -1 * deltaRight * self.dist_per_tick 
-            Dc = (Dl + Dr)/2
+            Dl = deltaLeft * self.dpt_left
+            Dr = -1 * deltaRight * self.dpt_right
+            self.Dl = self.Dl + Dl
+            self.Dr = self.Dr + Dr
+            Dc = (Dl + Dr)/2.0
             
             self.theta = self.theta + (Dr - Dl)/self.Dw
             self.x = self.x + Dc * math.cos(self.theta)
             self.y = self.y + Dc * math.sin(self.theta)
             
+            self.sensorData[-2] = [(self.x, self.y)]
+
             self.leftEncoderTicks = self.sensorData[4]
             self.rightEncoderTicks = self.sensorData[5]
 
-            self.sensorData[-2] = [(self.x, self.y)]
+            #print self.Dl, self.leftEncoderTicks, self.Dr, self.rightEncoderTicks
+            print Dl, Dr, Dc, self.x, self.y
 
             if abs(self.lastX - self.x) > 1 or abs(self.lastY - self.y) > 1:
                 self.lastX = self.x
@@ -124,7 +132,7 @@ class AlphaPi(robot.Robot):
 
 def main():
     global alphaPi
-    alphaPi = AlphaPi(arduinoDataCount = 5, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 12, verboseDataReporting = True)
+    alphaPi = AlphaPi(arduinoDataCount = 5, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 9, verboseDataReporting = True)
 
     try:
 	alphaPi.initialtime = time.time()

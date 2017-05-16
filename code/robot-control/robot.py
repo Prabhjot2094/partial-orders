@@ -61,6 +61,23 @@ class Robot():
             word -= 65536
         return word
 
+    def checkCRC (self, data, crcIndex):
+        CRC7_POLY = 0x91
+        crc = 0
+
+        for i in range(0, crcIndex):
+            crc ^= data[i]
+
+            for j in range(0, 8):
+                if (crc & 1):
+                    crc ^= CRC7_POLY
+                crc >>= 1
+
+        if crc == data[crcIndex]:
+            return True
+        else:
+            return False
+
     def getDoubleWord(self, bytesList):
         doubleWord = 0
         for byte in bytesList:
@@ -91,24 +108,29 @@ class Robot():
             rawData = self.arduinoBus.read_i2c_block_data(self.ARDUINO_ADDRESS, 0)
 
             if (len(rawData) != 32):
-                self.readSensorData()
+                return False
+
+            if not self.checkCRC(rawData, 14):
+                return False
 
             for sensorIndex in range(1, self.SONAR_NUM + self.LDR_NUM + 1):
                 self.sensorData[sensorIndex] = self.getWord(rawData[2*(sensorIndex-1) + 1], rawData[2*(sensorIndex-1) + 0])
                 if self.sensorData[sensorIndex] > 200:
-                    self.arduinoDataHandler()
+                    return False
 
             self.sensorData[4] = self.getDoubleWord([rawData[6], rawData[7], rawData[8], rawData[9]])
             self.sensorData[5] = self.getDoubleWord([rawData[10], rawData[11], rawData[12], rawData[13]])
 
             if (abs(self.sensorData[4] - self.leftLastTicks) > 1000) or (abs(self.sensorData[5] - self.rightLastTicks) > 1000):
-                self.arduinoDataHandler()
+                return False
             else:
                 self.leftLastTicks = self.sensorData[4]
                 self.rightLastTicks = self.sensorData[5]
 
         except IOError:
-            self.arduinoDataHandler()
+            return False
+
+        return True
 
     def sensorTileDataHandler(self):
         try:
@@ -127,7 +149,9 @@ class Robot():
                 else:
                     continue
         except:
-            self.sensorTileDataHandler()
+            return False
+
+        return True
 
     def readSensorData(self):
         nextDataReadTime = self.getTimestamp()
@@ -143,11 +167,14 @@ class Robot():
                         nextDataReadTime += self.DATA_READ_INTERVAL/1000.0
                         
                         self.sensorData[0] = currentTime
-                        self.arduinoDataHandler()
-                        self.sensorTileDataHandler()
+                        while not self.arduinoDataHandler():
+                            pass
+                        while not self.sensorTileDataHandler():
+                            pass
 
                         if self.VERBOSE_DATA_REPORTING:
                             if self.dataProcessor():
+                                print "True"
                                 self.sensorDataQueue.put(self.sensorData)
 
                         self.sensorDataReady = True
@@ -194,7 +221,7 @@ class Robot():
             self.autopilotFlag = False
 
             if command == 'forward':
-                    self.writeMotorSpeeds(speed, speed)
+                    self.writeMotorSpeeds(speed-3, speed-5)
 
             if command == 'backward':
                     self.writeMotorSpeeds(-speed, -speed)
