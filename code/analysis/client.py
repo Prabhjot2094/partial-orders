@@ -8,28 +8,23 @@ import threading
 import time
 import shutil   
 
-_HOST = "lambdapi.local"
-#_HOST = "0.0.0.0"
+_HOST = "alphapi.local"
+#_HOST = "192.168.1.26"
 
 rawData = Queue()
 
-def main(*params):
+def main(**kwargs):
 
     begin_time = time.time()
 
     print threading.activeCount()
     try:
-        if len(params)==4:
-            formatDataThread = Thread(target = printThread, args = (params[2],))
-            clientThread = Thread(target = client,args = (params[0],params[1],params[3],))
-            print "Thread Created"
-        else:
-            formatDataThread = Thread(target = printThread, args = (params[1],))
-            clientThread = Thread(target = client,args = (params[0],params[2],))
-            print "Thread CReated"
-
+        formatDataThread = Thread(target = printThread, args = (kwargs['processedData'],))
+        clientThread = Thread(target = client,kwargs = {'ip':kwargs['ip']})
+        print "Thread Created"
+        
         formatDataThread.setDaemon(True)
-        formatDataThread.setDaemon(True)
+        clientThread.setDaemon(True)
 
         formatDataThread.start()
         clientThread.start()
@@ -65,14 +60,15 @@ def printThread(formattedData):
                 leftover_data = split_row[-1]
         
         except Exception as e:
-            print e
-            print "Errorrrrr !!!!!"
-            return
+        	print e
+        	print "Error"
+        	return
+        	#printThread(formattedData)
 
 
-def client(*args):
+def client(**kwargs):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)                        
-    host = _HOST
+    host = kwargs['ip']
     port = 50001
 
     try :
@@ -80,11 +76,9 @@ def client(*args):
 
         s.settimeout(30.0)
 
-        print args
-        s.send(args[0])
-        if args[0]=='f':
-            s.send(args[1])
-
+        print kwargs
+        s.send("c")
+        
         while True:
             tm = s.recv(1024)
 
@@ -102,5 +96,5 @@ def client(*args):
         return
 
 #if __name__=="__main__":
-#q = Queue()
-#main('c',q)
+#    q = Queue()
+#    main(ip = 'alphapi.local',processedData=q)

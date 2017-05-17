@@ -7,14 +7,11 @@ import random
 
 class processData():
 
-    def __init__(self,*args):
+    def __init__(self,**kwargs):
         self.formattedData = Queue()
 
         try:
-            if args[0]=='f':
-                clientThread = Thread(name = "client", target=client.main, args=(args[0],args[1], args[2], args[3]))
-            else:
-                clientThread = Thread(name = "client", target=client.main, args=(args[0], args[1], args[2]))
+            clientThread = Thread(name = "client", target=client.main, kwargs={'processedData':kwargs['processedData'],'ip': kwargs['ip']})
 
             clientThread.setDaemon(True)
             clientThread.start()
@@ -24,7 +21,7 @@ class processData():
 
         except Exception as e:
             print "Exception in DataProcessing OR Client spawned from DataProcessing ,",e
-            raise Exception('In DataProcessing')
+            #raise Exception('In DataProcessing')
 
         #self.coordinates()
 
@@ -81,4 +78,4 @@ class processData():
 
 #if __name__ == '__main__':
 #	q = Queue()
-#	processData('c',q )
+#        processData(ip = 'alphapi.local',processedData=q)
