@@ -32,7 +32,7 @@ class Robot():
         sensorTile = serial.Serial('/dev/ttyACM0', 9600)
     except:
         sensorTile = serial.Serial('/dev/ttyACM1', 9600)
-
+    
     sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
     sensorDataReady = False
     dataReadFlag = False
@@ -150,7 +150,6 @@ class Robot():
                     continue
         except:
             return False
-
         return True
 
     def readSensorData(self):
@@ -174,7 +173,6 @@ class Robot():
 
                         if self.VERBOSE_DATA_REPORTING:
                             if self.dataProcessor():
-                                print "True"
                                 self.sensorDataQueue.put(self.sensorData)
 
                         self.sensorDataReady = True
@@ -221,7 +219,7 @@ class Robot():
             self.autopilotFlag = False
 
             if command == 'forward':
-                    self.writeMotorSpeeds(speed-3, speed-5)
+                    self.writeMotorSpeeds(speed-3, speed-4)
 
             if command == 'backward':
                     self.writeMotorSpeeds(-speed, -speed)
@@ -240,6 +238,8 @@ class Robot():
 
             if command == 'halt':
                     self.writeMotorSpeeds(0, 0)
+                    print "Motors Halted"
+                    time.sleep(5)
                     self.dataReadFlag = False
 
             if command == 'autopilot-sonar':
@@ -258,4 +258,5 @@ class Robot():
     def shutdown(self):
         print "Shutting Down"
         self.writeMotorSpeeds(0, 0)
+        time.sleep(5)
         sys.exit(0)

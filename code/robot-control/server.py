@@ -31,7 +31,6 @@ def main():
          
         print "Driving"
 #        lm.drive("autopilot-sonar",255,False)
-
         
         i=0
         while 1:
@@ -53,7 +52,7 @@ def main():
     except KeyboardInterrupt:
         s.close()
         lm.alphaPi.drive('halt')
-        
+        time.sleep(2)
 
 def clientThread(conn):
     # s = SEND A SINGLE RECORD

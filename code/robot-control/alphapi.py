@@ -13,7 +13,7 @@ import random
 class AlphaPi(robot.Robot):
     x = 0.0
     y = 0.0
-    dpt_left = 0.00294002
+    dpt_left = 0.0028465
     dpt_right = dpt_left
     Dw = 9.38
     Dl = 0
@@ -60,7 +60,7 @@ class AlphaPi(robot.Robot):
             deltaRight = self.sensorData[5] - self.rightEncoderTicks
 
             Dl = deltaLeft * self.dpt_left
-            Dr = -1 * deltaRight * self.dpt_right
+            Dr = deltaRight * self.dpt_right
             self.Dl = self.Dl + Dl
             self.Dr = self.Dr + Dr
             Dc = (Dl + Dr)/2.0
@@ -74,8 +74,7 @@ class AlphaPi(robot.Robot):
             self.leftEncoderTicks = self.sensorData[4]
             self.rightEncoderTicks = self.sensorData[5]
 
-            #print self.Dl, self.leftEncoderTicks, self.Dr, self.rightEncoderTicks
-            print Dl, Dr, Dc, self.x, self.y
+#            print "%f\t%f\t%d\t%d\t%d" % (self.x, self.y, self.leftEncoderTicks, self.rightEncoderTicks, self.leftEncoderTicks + self.rightEncoderTicks)
 
             if abs(self.lastX - self.x) > 1 or abs(self.lastY - self.y) > 1:
                 self.lastX = self.x
@@ -86,7 +85,7 @@ class AlphaPi(robot.Robot):
         else: 
             return False
 
-    def afterObstacleEvent(self, obstacle, speed, lock):
+    def afterObstacleEvent(self, obstacle, speed):
 	# Left
 	if obstacle < 0:
 	    speedLeft = -speed
@@ -119,12 +118,23 @@ class AlphaPi(robot.Robot):
                         self.writeMotorSpeeds(speed, speed)
                         time.sleep(0.005)
 
-                    elif obstacle < 0:      # obstacle towards left
-                        self.afterObstacleEvent(obstacle, speed, lock)
+                    else:
+                        self.afterObstacleEvent(obstacle, speed) 
                         
-                    elif obstacle >= 0: # Obstacle towards right
-                        self.afterObstacleEvent(obstacle, speed, lock)
+                    '''
+                    self.writeMotorSpeeds(speed, speed)
+                    time.sleep(5)
+                    self.writeMotorSpeeds(0, 0)
+                    time.sleep(0.5)
 
+                    lastTheta = self.theta
+                    self.writeMotorSpeeds(-speed, speed)
+                    while abs(lastTheta - self.theta) < math.radians(90):
+                        time.sleep(0.001)
+                        pass
+                    self.writeMotorSpeeds(0, 0)
+                    time.sleep(1)
+                    '''                    
             else:
                 self.writeMotorSpeeds(0, 0)
                 print "Autopilot Stopped"
