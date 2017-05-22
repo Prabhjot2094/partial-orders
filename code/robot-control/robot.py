@@ -33,7 +33,7 @@ class Robot():
     except:
         sensorTile = serial.Serial('/dev/ttyACM1', 9600)
     
-    sensorData = [0] * (1 + ARDUINO_DATA_COUNT + SENSOR_TILE_DATA_COUNT + 2)
+    sensorData = []
     sensorDataReady = False
     dataReadFlag = False
     dataLogFlag = False
@@ -42,6 +42,14 @@ class Robot():
     autopilotStartTime = 0
     sensorDataQueue = Queue()
     leftLastTicks = rightLastTicks = 0
+    sensorTileDataHeader = ["Tile_Timestamp", "Calibration_Flag",
+                            "GYR_X", "GYR_Y", "GYR_Z",
+                            "ACC_X", "ACC_Y", "ACC_Z",
+                            "MAG_X", "MAG_Y", "MAG_Z",
+                            "Yaw", "Pitch", "Roll",
+                            "Quat_1", "Quat_2", "Quat_3", "Quat_4",
+                            "GRA_X", "GRA_Y", "GRA_Z",
+                            "LIN_X", "LIN_Y", "LIN_Z"]
 
     def __init__(self,arduinoDataCount = 11, sonar_num = 3, ldr_num = 0, encoder_num = 2, dataReadInterval = 50, obstacleDistance = 10, verboseDataReporting = False):
         self.ARDUINO_DATA_COUNT = arduinoDataCount
@@ -52,6 +60,7 @@ class Robot():
         self.LDR_NUM = ldr_num
         self.ENCODER_NUM = encoder_num
         self.YAW_INDEX = 1 + self.ARDUINO_DATA_COUNT + 11
+        self.sensorData = [0] * (1 + self.ARDUINO_DATA_COUNT + self.SENSOR_TILE_DATA_COUNT + 3)
         
     def highByte (self, number) : return number >> 8
     def lowByte (self, number) : return number & 0x00FF
@@ -87,6 +96,36 @@ class Robot():
             doubleWord -= 4294967296
 
         return doubleWord
+
+    def linearize(self, inputData):
+        linearList = []
+        for element in inputData:
+            if (type(element) is list) or (type(element) is tuple):
+                linearList += self.linearize(element)
+            else:
+                linearList.append(element)
+
+        return linearList
+
+    def generateDataHeader(self):
+        dataHeader = ["Timestamp"]
+        for i in range(1, self.SONAR_NUM + 1):
+            dataHeader.append("US_%d" % (i))
+        for i in range(1, self.LDR_NUM + 1):
+            dataHeader.append("LDR_%d" % (i))
+        if self.ENCODER_NUM == 2:
+            dataHeader.append("EncoderLeft")
+            dataHeader.append("EncoderRight")
+
+        dataHeader += self.sensorTileDataHeader
+        dataHeader += ["Theta", "Pos_X", "Pos_Y"]
+
+        for i in range(1, self.SONAR_NUM + 1):
+            dataHeader.append("Obs_%d_X" % (i))
+            dataHeader.append("Obs_%d_Y" % (i))
+
+        print dataHeader
+        return dataHeader
     
     def getFileName(self):
         directory = '../../data/live-data'
@@ -157,6 +196,7 @@ class Robot():
 
         with open(self.getFileName(), 'wb') as rawfile:
             csvfile = csv.writer(rawfile, delimiter=',') 
+            csvfile.writerow(self.generateDataHeader())
             while True:
                 if self.dataReadFlag:
                     currentTime = self.getTimestamp()
@@ -176,8 +216,10 @@ class Robot():
                                 self.sensorDataQueue.put(self.sensorData)
 
                         self.sensorDataReady = True
+
                         if self.dataLogFlag:
-                            csvfile.writerow(self.sensorData)
+                            csvfile.writerow(self.linearize(self.sensorData))
+
                         time.sleep(0.01)
 
                 else:

@@ -69,12 +69,11 @@ class AlphaPi(robot.Robot):
             self.x = self.x + Dc * math.cos(self.theta)
             self.y = self.y + Dc * math.sin(self.theta)
             
+            self.sensorData[-3] = self.theta
             self.sensorData[-2] = [(self.x, self.y)]
 
             self.leftEncoderTicks = self.sensorData[4]
             self.rightEncoderTicks = self.sensorData[5]
-
-#            print "%f\t%f\t%d\t%d\t%d" % (self.x, self.y, self.leftEncoderTicks, self.rightEncoderTicks, self.leftEncoderTicks + self.rightEncoderTicks)
 
             if abs(self.lastX - self.x) > 1 or abs(self.lastY - self.y) > 1:
                 self.lastX = self.x
